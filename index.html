@@ -306,6 +306,15 @@ for(let i=1;i<=12;i++){
 let h=3, m=15, mode="lern", lvl=3, score=0, target=null, locked=false;
 let hAngle=0, mAngle=0;
 try{score=+localStorage.getItem("uhr-score")||0}catch(e){}
+/* where the child left off: mode, level and the practice clock */
+try{
+  const st=JSON.parse(localStorage.getItem("uhr-state")||"{}");
+  if(["lern","stell","luege"].includes(st.mode)) mode=st.mode;
+  if([1,2,3].includes(st.lvl)) lvl=st.lvl;
+  if(st.h>=1&&st.h<=12&&st.m>=0&&st.m<60&&st.m%5===0){h=st.h;m=st.m}
+}catch(e){}
+let practice={h,m};
+function saveState(){try{localStorage.setItem("uhr-state",JSON.stringify({mode,lvl,h:practice.h,m:practice.m}))}catch(e){}}
 
 function wedgePath(min){
   if(min===0) return "";
@@ -323,6 +332,7 @@ function draw(){
   $("gm").style.transformOrigin=$("gh").style.transformOrigin="150px 150px";
   $("wedge").setAttribute("d",wedgePath(m));
   if(mode==="lern"){
+    if(practice.h!==h||practice.m!==m){practice={h,m};saveState();}
     const p=phrase(h,m);
     $("ch").innerHTML=p.ch; $("de").textContent="Hochdütsch: "+p.de; $("dig").textContent=dig(h,m);
     cur=p; $("speak").hidden=!tts;
@@ -411,12 +421,13 @@ function lose(){
 }
 
 function setMode(md){
-  hush(); mode=md;
+  hush(); if(md==="lern"&&mode!=="lern"){h=practice.h;m=practice.m}
+  mode=md; saveState();
   document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.mode===md));
   $("controls").hidden=md==="luege"; $("check").hidden=md!=="stell"; $("opts").hidden=md!=="luege";
   $("hint").hidden=md==="luege";
   $("fb").textContent=""; $("nextRow").hidden=true;
-  if(md==="lern"){ $("sayLabel").textContent="Mer seit"; draw(); syncDock(); } else newTask();
+  if(md==="lern"){ $("sayLabel").textContent="Mer seit"; draw(); snapM(); syncDock(); } else newTask();
 }
 
 /* controls */
@@ -438,7 +449,7 @@ window.addEventListener("pagehide",hush);
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
 document.querySelectorAll(".levels button").forEach(b=>b.onclick=()=>{
   lvl=+b.dataset.lvl; document.querySelectorAll(".levels button").forEach(x=>x.setAttribute("aria-pressed",x===b));
-  labelSteps(); if(mode!=="lern") newTask(); else snapM();
+  saveState(); labelSteps(); if(mode!=="lern") newTask(); else snapM();
 });
 
 /* dragging */
@@ -476,7 +487,8 @@ svg.addEventListener("pointermove",move);
 const end=()=>{if(drag)lastDragEnd=Date.now();drag=null;$("hands").classList.remove("dragging");$("gh").classList.remove("active");$("gm").classList.remove("active")};
 svg.addEventListener("pointerup",end); svg.addEventListener("pointercancel",end);
 
-setScore(0); setSound(soundOn); labelSteps(); draw();
+document.querySelectorAll(".levels button").forEach(x=>x.setAttribute("aria-pressed",+x.dataset.lvl===lvl));
+setScore(0); setSound(soundOn); labelSteps(); setMode(mode);
 // no offline cache when testing locally, so edits show on a plain reload
 const local=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
 if(local&&"serviceWorker" in navigator) navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});
