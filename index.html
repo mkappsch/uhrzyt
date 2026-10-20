@@ -83,6 +83,26 @@ svg{width:100%;height:100%;display:block;touch-action:none;user-select:none}
 .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
 #controls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 #check .btn,#nextRow .btn{flex:1;max-width:420px}
+/* answer dock: feedback + Prüefe/Nöchschti; pinned to the bottom on portrait screens so it never needs scrolling */
+.dock{display:flex;flex-direction:column;gap:8px}
+@media (orientation:portrait){
+  .dock{position:fixed;left:0;right:0;bottom:0;z-index:5;padding:10px max(16px,env(safe-area-inset-left,0px)) calc(12px + env(safe-area-inset-bottom,0px));
+    background:color-mix(in srgb,var(--bg) 88%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:2px solid var(--line)}
+  .wrap{padding-bottom:calc(var(--dock,0px) + 24px)}
+}
+.hd{display:flex;align-items:center;gap:8px}
+.mute{font:inherit;border:2px solid var(--line);background:var(--paper);color:var(--muted);border-radius:999px;width:40px;height:36px;display:grid;place-items:center;cursor:pointer;padding:0}
+.mute svg{width:20px;height:20px;fill:currentColor}
+.score{display:inline-block}
+.score.pop{animation:pop .6s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{0%{transform:scale(1)}35%{transform:scale(1.35) rotate(-6deg)}100%{transform:scale(1)}}
+.fb-star{display:inline-block}
+.feedback.ok .fb-star{animation:spin .8s cubic-bezier(.3,1.4,.5,1)}
+@keyframes spin{0%{transform:scale(0) rotate(-180deg)}70%{transform:scale(1.4) rotate(15deg)}100%{transform:scale(1) rotate(0)}}
+.feedback.no{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.burst{position:fixed;z-index:20;pointer-events:none;font-size:34px;line-height:1;color:#ffc531;text-shadow:0 0 10px rgba(255,197,49,.7),0 1px 0 rgba(0,0,0,.3);left:0;top:0;will-change:transform,opacity}
+@media (prefers-reduced-motion:reduce){.score.pop,.feedback.ok .fb-star,.feedback.no{animation:none}.burst{display:none}}
 .btn{font:inherit;font-weight:800;font-size:1.05rem;border:0;border-radius:14px;padding:12px 8px;min-height:56px;cursor:pointer;background:var(--paper);color:var(--ink);border:2px solid var(--line);min-width:0;font-size:1.15rem}
 .btn.primary{background:var(--minute);border-color:var(--minute);color:#1f1205}
 .btn.h{color:var(--hour)} .btn.m{color:var(--minute)}
@@ -130,7 +150,10 @@ svg{width:100%;height:100%;display:block;touch-action:none;user-select:none}
   <div class="top">
   <header>
     <h1>Uhrzyt <span>lerne</span></h1>
-    <div class="score" id="score" aria-live="polite">★ 0</div>
+    <div class="hd">
+      <button class="mute" id="mute" aria-pressed="false" aria-label="Tön us"><svg viewBox="0 0 24 24" aria-hidden="true"><path id="muteIcon" d=""/></svg></button>
+      <div class="score" id="score" aria-live="polite">★ 0</div>
+    </div>
   </header>
 
   <nav class="tabs" role="group" aria-label="Modus">
@@ -180,12 +203,14 @@ svg{width:100%;height:100%;display:block;touch-action:none;user-select:none}
     <button class="btn m" id="mp" aria-label="Füüf Minute vorwärts">+ 5</button>
     <button class="btn h" id="hp" aria-label="Eis Stund vorwärts">+ Std</button>
   </div>
-  <div id="check" class="row" hidden>
-    <button class="btn primary" id="go">Prüefe</button>
-  </div>
   <div id="opts" class="opts" hidden></div>
-  <div class="feedback" id="fb"></div>
-  <div class="row" id="nextRow" hidden><button class="btn primary" id="next">Nöchschti Uufgab</button></div>
+  <div class="dock" id="dock" hidden>
+    <div class="feedback" id="fb"></div>
+    <div id="check" class="row" hidden>
+      <button class="btn primary" id="go">Prüefe</button>
+    </div>
+    <div class="row" id="nextRow" hidden><button class="btn primary" id="next">Nöchschti Uufgab</button></div>
+  </div>
 
   <p class="hint" id="hint">Zieh de <b class="m">langi oranschi Zeiger</b> für d'Minute und de <b class="h">churzi blaui Zeiger</b> für d'Stund. Rächts isch «ab», links isch «vor».</p>
   </div>
@@ -235,6 +260,32 @@ function speak(e){
   const u=new SpeechSynthesisUtterance(txt); const v=pickVoice();
   if(v){u.voice=v;u.lang=v.lang}else u.lang="de-CH";
   u.rate=.85; speechSynthesis.speak(u);
+}
+/* feedback sounds, synthesized; they only follow an answer the child just tapped */
+let actx=null, soundOn=true;
+try{soundOn=localStorage.getItem("uhr-sound")!=="off"}catch(e){}
+const ICON_ON="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z";
+const ICON_OFF="M3 9v6h4l5 5V4L7 9H3zm13.6 3 2.7-2.7-1.4-1.4-2.7 2.7-2.7-2.7-1.4 1.4 2.7 2.7-2.7 2.7 1.4 1.4 2.7-2.7 2.7 2.7 1.4-1.4z";
+function tone(f0,f1,t,dur,type,vol){
+  const o=actx.createOscillator(), g=actx.createGain();
+  o.type=type; o.frequency.setValueAtTime(f0,t); if(f1!==f0) o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+.015); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g).connect(actx.destination); o.start(t); o.stop(t+dur+.02);
+}
+function sfx(ok){
+  if(!soundOn) return;
+  try{
+    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state==="suspended") actx.resume();
+    const t=actx.currentTime+.02;
+    if(ok){ [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone(f,f,t+i*.09,.32,"triangle",.22)); tone(2093,2093,t+.36,.4,"sine",.06); }
+    else { tone(311,233,t,.22,"triangle",.22); tone(233,175,t+.2,.3,"triangle",.2); }
+  }catch(e){}
+}
+function setSound(on){
+  soundOn=on; $("muteIcon").setAttribute("d",on?ICON_ON:ICON_OFF);
+  $("mute").setAttribute("aria-pressed",!on); $("mute").setAttribute("aria-label",on?"Tön us":"Tön ii");
+  try{localStorage.setItem("uhr-sound",on?"on":"off")}catch(e){}
 }
 const dig=(h,m)=>`${h%12||12}:${String(m).padStart(2,"0")}`;
 
@@ -293,10 +344,32 @@ function randTime(){
   const pool={1:[0,30],2:[0,15,30,45],3:[0,5,10,15,20,25,30,35,40,45,50,55]}[lvl];
   return {h:1+Math.floor(Math.random()*12), m:pool[Math.floor(Math.random()*pool.length)]};
 }
+function starBurst(){
+  if(matchMedia("(prefers-reduced-motion:reduce)").matches) return;
+  const from=$("fb").getBoundingClientRect(), to=$("score").getBoundingClientRect();
+  const x0=from.left+from.width/2, y0=from.top+from.height/2, x1=to.left+to.width/2-14, y1=to.top+to.height/2-16;
+  const N=10;
+  for(let i=0;i<N;i++){
+    const s=document.createElement("span"); s.className="burst"; s.textContent="★"; document.body.append(s);
+    const a=Math.PI*2*i/N+Math.random()*.4, r=80+Math.random()*70, mx=x0+Math.cos(a)*r, my=y0+Math.sin(a)*r*.8;
+    const fly=i>=N-3, last=i===N-1; // the last three fly up into the score
+    s.animate([
+      {transform:`translate(${x0-14}px,${y0-16}px) scale(.2) rotate(0deg)`,opacity:0},
+      {transform:`translate(${mx-14}px,${my-16}px) scale(1.2) rotate(${120+i*20}deg)`,opacity:1,offset:.35},
+      fly?{transform:`translate(${x1}px,${y1}px) scale(.6) rotate(360deg)`,opacity:1}
+         :{transform:`translate(${mx-14}px,${my+50}px) scale(.5) rotate(${240+i*20}deg)`,opacity:0}
+    ],{duration:fly?900+(i-N+3)*90:900+i*30,easing:"cubic-bezier(.2,.7,.3,1)",fill:"forwards"}).onfinish=()=>{
+      s.remove(); if(last){ $("score").classList.remove("pop"); void $("score").offsetWidth; $("score").classList.add("pop"); }
+    };
+  }
+}
 function setScore(d){score=Math.max(0,score+d);$("score").textContent="★ "+score;try{localStorage.setItem("uhr-score",score)}catch(e){}}
 
+function syncDock(){
+  $("dock").hidden=mode==="lern"||($("check").hidden&&$("nextRow").hidden&&!$("fb").textContent);
+}
 function newTask(){
-  hush(); locked=false; $("fb").textContent=""; $("fb").className="feedback"; $("nextRow").hidden=true;
+  hush(); locked=false; $("fb").textContent=""; $("fb").className="feedback"; $("nextRow").hidden=true; $("check").hidden=mode!=="stell";
   target=randTime();
   if(mode==="stell"){ h=12; m=0; draw(); showTarget(); }
   if(mode==="luege"){
@@ -321,16 +394,21 @@ function newTask(){
       box.append(b);
     });
   }
+  syncDock();
 }
 function win(){
   const p=phrase(target.h,target.m);
-  $("fb").textContent=["Super!","Bravo!","Genau so!","Toll gmacht!"][Math.floor(Math.random()*4)]+" ★";
-  $("fb").className="feedback ok"; setScore(1);
+  $("fb").innerHTML=["Super!","Bravo!","Genau so!","Toll gmacht!"][Math.floor(Math.random()*4)]+' <span class="fb-star">★</span>';
+  $("fb").className="feedback"; void $("fb").offsetWidth; $("fb").className="feedback ok";
+  sfx(true); setScore(1);
   $("sayLabel").textContent="Richtig"; $("ch").innerHTML=p.ch; $("de").textContent="Hochdütsch: "+p.de; $("dig").textContent=dig(target.h,target.m);
   cur=p; $("speak").hidden=!tts;
-  $("nextRow").hidden=false;
+  $("check").hidden=true; $("nextRow").hidden=false; syncDock(); starBurst();
 }
-function lose(){ $("fb").textContent="Fasch! Probier nomal."; $("fb").className="feedback no"; }
+function lose(){
+  sfx(false); $("fb").textContent="Fasch! Probier nomal.";
+  $("fb").className="feedback"; void $("fb").offsetWidth; $("fb").className="feedback no"; syncDock();
+}
 
 function setMode(md){
   hush(); mode=md;
@@ -338,7 +416,7 @@ function setMode(md){
   $("controls").hidden=md==="luege"; $("check").hidden=md!=="stell"; $("opts").hidden=md!=="luege";
   $("hint").hidden=md==="luege";
   $("fb").textContent=""; $("nextRow").hidden=true;
-  if(md==="lern"){ $("sayLabel").textContent="Mer seit"; draw(); } else newTask();
+  if(md==="lern"){ $("sayLabel").textContent="Mer seit"; draw(); syncDock(); } else newTask();
 }
 
 /* controls */
@@ -352,6 +430,8 @@ $("hp").onclick=()=>step(60); $("hm").onclick=()=>step(-60);
 $("go").onclick=()=>{ if(locked) return; if(h%12===target.h%12&&m===target.m){locked=true;win();} else lose(); };
 $("next").onclick=newTask;
 $("play").onclick=speak;
+$("mute").onclick=()=>setSound(!soundOn);
+if("ResizeObserver" in window) new ResizeObserver(()=>document.documentElement.style.setProperty("--dock",$("dock").offsetHeight+"px")).observe($("dock"));
 if(tts) speechSynthesis.onvoiceschanged=()=>{};
 document.addEventListener("visibilitychange",()=>{if(document.hidden)hush()});
 window.addEventListener("pagehide",hush);
@@ -396,8 +476,11 @@ svg.addEventListener("pointermove",move);
 const end=()=>{if(drag)lastDragEnd=Date.now();drag=null;$("hands").classList.remove("dragging");$("gh").classList.remove("active");$("gm").classList.remove("active")};
 svg.addEventListener("pointerup",end); svg.addEventListener("pointercancel",end);
 
-setScore(0); labelSteps(); draw();
-if(document.querySelector('link[rel="manifest"]')&&"serviceWorker" in navigator){
+setScore(0); setSound(soundOn); labelSteps(); draw();
+// no offline cache when testing locally, so edits show on a plain reload
+const local=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+if(local&&"serviceWorker" in navigator) navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});
+else if(document.querySelector('link[rel="manifest"]')&&"serviceWorker" in navigator){
   try{navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(e){}
 }
 })();
