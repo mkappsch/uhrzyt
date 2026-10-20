@@ -64,6 +64,9 @@ svg{width:100%;height:100%;display:block;touch-action:none;user-select:none}
 .hand-h{stroke:var(--hour);stroke-width:13;stroke-linecap:round}
 .hand-m{stroke:var(--minute);stroke-width:8;stroke-linecap:round}
 .knob{fill:var(--rim)}
+.grip-h{fill:var(--hour)} .grip-m{fill:var(--minute)}
+.hit{stroke:transparent;stroke-linecap:round}
+#gh.active .hand-h{stroke-width:17} #gm.active .hand-m{stroke-width:12}
 .wedge{fill:var(--wedge)}
 .grab{cursor:grab}
 
@@ -75,8 +78,6 @@ svg{width:100%;height:100%;display:block;touch-action:none;user-select:none}
 .speak{display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:8px}
 .speak .play{font:inherit;font-weight:800;border:0;border-radius:999px;padding:10px 14px;min-height:46px;background:var(--hour);color:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
 .speak .play svg{width:18px;height:18px;fill:currentColor}
-.speak .vb{font:inherit;font-size:.85rem;font-weight:800;border:2px solid var(--line);border-radius:999px;padding:8px 10px;min-height:40px;background:transparent;color:var(--muted);cursor:pointer}
-.speak .vb[aria-pressed="true"]{border-color:var(--hour);color:var(--ink)}
 .say .dig{font-family:var(--display);font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
 
 .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
@@ -155,8 +156,8 @@ svg{width:100%;height:100%;display:block;touch-action:none;user-select:none}
       <g id="ticks"></g>
       <g id="nums"></g>
       <g class="hands" id="hands">
-        <g id="gh"><line class="hand-h" x1="150" y1="150" x2="150" y2="82"/></g>
-        <g id="gm"><line class="hand-m" x1="150" y1="150" x2="150" y2="38"/></g>
+        <g id="gh"><line class="hit" x1="150" y1="150" x2="150" y2="82" stroke-width="44"/><line class="hand-h" x1="150" y1="150" x2="150" y2="82"/><circle class="grip-h" cx="150" cy="82" r="12"/></g>
+        <g id="gm"><line class="hit" x1="150" y1="150" x2="150" y2="38" stroke-width="44"/><line class="hand-m" x1="150" y1="150" x2="150" y2="38"/><circle class="grip-m" cx="150" cy="38" r="12"/></g>
       </g>
       <circle class="knob" cx="150" cy="150" r="9"/>
     </svg>
@@ -169,9 +170,7 @@ svg{width:100%;height:100%;display:block;touch-action:none;user-select:none}
     <span class="de" id="de"></span>
     <span class="dig" id="dig"></span>
     <div class="speak" id="speak">
-      <button class="play" id="play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>Vorläse</button>
-      <button class="vb" id="v-ch" data-v="ch" aria-pressed="true">Dialekt</button>
-      <button class="vb" id="v-de" data-v="de" aria-pressed="false">Hochdütsch</button>
+      <button class="play" id="play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>Hochdütsch vorläse</button>
     </div>
   </section>
 
@@ -219,18 +218,19 @@ function phrase(h,m){
   };
   return {ch:map[m][0], de:map[m][1], plain:map[m][0].replace(/<[^>]+>/g,"")};
 }
-/* text to speech */
-let cur=null, voiceMode="ch";
-try{voiceMode=localStorage.getItem("uhr-voice")||"ch"}catch(e){}
+/* text to speech: Hochdeutsch only, and only from a real tap on the play button */
+let cur=null, lastDragEnd=0;
+try{localStorage.removeItem("uhr-voice")}catch(e){}
 const tts="speechSynthesis" in window;
+const hush=()=>{if(tts)speechSynthesis.cancel()};
 function pickVoice(){
   const vs=tts?speechSynthesis.getVoices():[];
   return vs.find(v=>/de[-_]CH/i.test(v.lang))||vs.find(v=>/^de/i.test(v.lang))||null;
 }
-function speak(){
-  if(!tts||!cur) return;
-  // German voices read the dialect spelling better without doubled vowels
-  const txt=voiceMode==="ch"?cur.plain.replace(/üü/g,"ü").replace(/zwänzg/g,"zwänzig"):(/Uhr$/.test(cur.de)?"Es ist "+cur.de:cur.de);
+function speak(e){
+  if(!tts||!cur||!e||!e.isTrusted) return;
+  if(Date.now()-lastDragEnd<600) return; // a drag that ends on the button is not a tap
+  const txt=/Uhr$/.test(cur.de)?"Es ist "+cur.de:cur.de;
   speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(txt); const v=pickVoice();
   if(v){u.voice=v;u.lang=v.lang}else u.lang="de-CH";
@@ -296,7 +296,7 @@ function randTime(){
 function setScore(d){score=Math.max(0,score+d);$("score").textContent="★ "+score;try{localStorage.setItem("uhr-score",score)}catch(e){}}
 
 function newTask(){
-  locked=false; $("fb").textContent=""; $("fb").className="feedback"; $("nextRow").hidden=true;
+  hush(); locked=false; $("fb").textContent=""; $("fb").className="feedback"; $("nextRow").hidden=true;
   target=randTime();
   if(mode==="stell"){ h=12; m=0; draw(); showTarget(); }
   if(mode==="luege"){
@@ -327,13 +327,13 @@ function win(){
   $("fb").textContent=["Super!","Bravo!","Genau so!","Toll gmacht!"][Math.floor(Math.random()*4)]+" ★";
   $("fb").className="feedback ok"; setScore(1);
   $("sayLabel").textContent="Richtig"; $("ch").innerHTML=p.ch; $("de").textContent="Hochdütsch: "+p.de; $("dig").textContent=dig(target.h,target.m);
-  cur=p; $("speak").hidden=!tts; speak();
+  cur=p; $("speak").hidden=!tts;
   $("nextRow").hidden=false;
 }
 function lose(){ $("fb").textContent="Fasch! Probier nomal."; $("fb").className="feedback no"; }
 
 function setMode(md){
-  mode=md;
+  hush(); mode=md;
   document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.mode===md));
   $("controls").hidden=md==="luege"; $("check").hidden=md!=="stell"; $("opts").hidden=md!=="luege";
   $("hint").hidden=md==="luege";
@@ -342,49 +342,61 @@ function setMode(md){
 }
 
 /* controls */
+const gran=()=>({1:30,2:15,3:5})[lvl];
+function snapM(){ const g=gran(); if(m%g){ m=Math.round(m/g)*g; if(m===60){m=0;h=h%12+1} draw(); } }
+function labelSteps(){ const g=gran(); $("mp").textContent="+ "+g; $("mm").textContent="− "+g;
+  $("mp").setAttribute("aria-label",g+" Minute vorwärts"); $("mm").setAttribute("aria-label",g+" Minute zrugg"); }
 function step(dm){ let t=h*60+m+dm; t=((t%720)+720)%720; h=Math.floor(t/60)||12; m=t%60; draw(); }
-$("mp").onclick=()=>step(5); $("mm").onclick=()=>step(-5);
+$("mp").onclick=()=>step(gran()); $("mm").onclick=()=>step(-gran());
 $("hp").onclick=()=>step(60); $("hm").onclick=()=>step(-60);
 $("go").onclick=()=>{ if(locked) return; if(h%12===target.h%12&&m===target.m){locked=true;win();} else lose(); };
-$("next").onclick=()=>{newTask(); if(mode==="stell") speak();};
+$("next").onclick=newTask;
 $("play").onclick=speak;
-document.querySelectorAll(".vb").forEach(b=>{b.setAttribute("aria-pressed",b.dataset.v===voiceMode);b.onclick=()=>{
-  voiceMode=b.dataset.v; document.querySelectorAll(".vb").forEach(x=>x.setAttribute("aria-pressed",x===b));
-  try{localStorage.setItem("uhr-voice",voiceMode)}catch(e){} speak();
-}});
 if(tts) speechSynthesis.onvoiceschanged=()=>{};
+document.addEventListener("visibilitychange",()=>{if(document.hidden)hush()});
+window.addEventListener("pagehide",hush);
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
 document.querySelectorAll(".levels button").forEach(b=>b.onclick=()=>{
   lvl=+b.dataset.lvl; document.querySelectorAll(".levels button").forEach(x=>x.setAttribute("aria-pressed",x===b));
-  if(mode!=="lern") newTask();
+  labelSteps(); if(mode!=="lern") newTask(); else snapM();
 });
 
 /* dragging */
-const svg=$("clock"); let drag=null;
+const svg=$("clock"); let drag=null, acc=0, lastA=0;
 function pt(e){const r=svg.getBoundingClientRect();const s=356/r.width;return{x:(e.clientX-r.left)*s-28-150,y:(e.clientY-r.top)*s-28-150}}
 const angOf=p=>(Math.atan2(p.x,-p.y)*180/Math.PI+360)%360;
+const angDiff=(a,b)=>Math.abs(((a-b)%360+540)%360-180);
 svg.addEventListener("pointerdown",e=>{
-  if(mode==="luege"||locked) return;
+  if(mode==="luege"||locked||!e.isPrimary) return;
+  e.preventDefault();
   const p=pt(e), d=Math.hypot(p.x,p.y), a=angOf(p);
-  const hA=((h%12)+m/60)*30, diff=Math.abs(((a-hA)%360+540)%360-180);
-  drag = (d<78 && diff<35) ? "h" : "m";
-  svg.setPointerCapture(e.pointerId); $("hands").classList.add("dragging"); move(e);
+  const dH=angDiff(a,((h%12)+m/60)*30), dM=angDiff(a,m*6);
+  // hour hand: anywhere near it inside the face; on overlap the inner part means hour
+  drag=(d<100 && dH<45 && (dH<dM || d<80)) ? "h" : "m";
+  svg.setPointerCapture(e.pointerId); $("hands").classList.add("dragging");
+  $(drag==="h"?"gh":"gm").classList.add("active");
+  if(drag==="m"){ // tap sets the minute directly, without touching the hour
+    const nm=Math.round(a/6/gran())*gran()%60; if(nm!==m){m=nm;draw();}
+    acc=(h%12)*60+m+((a/6-m)%60+90)%60-30; lastA=a; // finger position in minutes, followed as it turns
+  } else move(e);
 });
 function move(e){
   if(!drag) return;
-  const a=angOf(pt(e));
+  const a=angOf(pt(e)), g=gran();
   if(drag==="m"){
-    const nm=Math.round(a/30)*5%60;
-    if(m>=45&&nm<15) step(60-m+nm); else if(m<15&&nm>=45) step(-(m+60-nm)); else if(nm!==m){m=nm;draw();}
+    // follow the finger's actual turning, so passing 12 carries the hour forwards or back
+    acc+=(((a-lastA)%360+540)%360-180)/6; lastA=a;
+    const t=((Math.round(acc/g)*g)%720+720)%720, nh=Math.floor(t/60)||12, nm=t%60;
+    if(nh!==h||nm!==m){h=nh;m=nm;draw();}
   } else {
-    let nh=Math.round(a/30)%12||12; if(nh!==h){h=nh;draw();}
+    const nh=Math.round((a-m/2)/30+12)%12||12; if(nh!==h){h=nh;draw();}
   }
 }
 svg.addEventListener("pointermove",move);
-const end=()=>{drag=null;$("hands").classList.remove("dragging")};
+const end=()=>{if(drag)lastDragEnd=Date.now();drag=null;$("hands").classList.remove("dragging");$("gh").classList.remove("active");$("gm").classList.remove("active")};
 svg.addEventListener("pointerup",end); svg.addEventListener("pointercancel",end);
 
-setScore(0); draw();
+setScore(0); labelSteps(); draw();
 if(document.querySelector('link[rel="manifest"]')&&"serviceWorker" in navigator){
   try{navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(e){}
 }
