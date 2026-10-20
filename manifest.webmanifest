@@ -1,0 +1,30 @@
+{
+  "name": "Uhrzyt lerne",
+  "short_name": "Uhrzyt",
+  "lang": "de-CH",
+  "description": "D'Uhr uf Schwiizerdütsch lerne",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#eef4f1",
+  "theme_color": "#eef4f1",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

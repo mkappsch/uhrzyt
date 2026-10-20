@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#eef4f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141b20" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Uhrzyt">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}html,body{overscroll-behavior:none}</style>
+<title>Uhrzyt Lerne</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@500;700;800&display=swap">
+<style>
+/* Layout: one centered column — big touchable clock, the spoken phrase under it, mode tabs on top */
+:root{
+  --bg:#eef4f1; --paper:#ffffff; --ink:#1f2a33; --muted:#5f6f78;
+  --hour:#2a6fdb; --minute:#f2762e; --good:#2f9e5b; --bad:#d64545;
+  --face:#fffdf7; --rim:#1f2a33; --wedge:rgba(242,118,46,.16); --line:#d6e0dc;
+  --display:"Baloo 2","Trebuchet MS",system-ui,sans-serif;
+  --body:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141b20; --paper:#1d262d; --ink:#eef2f4; --muted:#9fb0b9;
+  --hour:#6aa2ff; --minute:#ff9a5c; --good:#4cc47e; --bad:#ff7070;
+  --face:#232e36; --rim:#e6ecef; --wedge:rgba(255,154,92,.2); --line:#33424c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141b20; --paper:#1d262d; --ink:#eef2f4; --muted:#9fb0b9;
+  --hour:#6aa2ff; --minute:#ff9a5c; --good:#4cc47e; --bad:#ff7070;
+  --face:#232e36; --rim:#e6ecef; --wedge:rgba(255,154,92,.2); --line:#33424c; color-scheme:dark}
+
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:1rem;-webkit-tap-highlight-color:transparent}
+button{touch-action:manipulation}
+[hidden]{display:none!important}
+.wrap{max-width:560px;margin:0 auto;padding-block:12px 32px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:12px}
+.top{display:flex;flex-direction:column;gap:10px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.6rem,6vw,2.4rem);margin:0;line-height:1}
+h1 span{color:var(--minute)}
+.score{font-family:var(--display);font-weight:800;font-size:1.25rem;color:var(--minute);font-variant-numeric:tabular-nums;background:var(--paper);border:2px solid var(--line);border-radius:999px;padding:2px 14px}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--paper);padding:4px;border-radius:16px;border:2px solid var(--line)}
+.tabs button,.levels button{font:inherit;font-weight:800;border:0;border-radius:12px;padding:12px 4px;min-height:48px;background:transparent;color:var(--muted);cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.levels{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.levels button{border:2px solid var(--line);padding:6px 4px;min-height:40px;font-size:.85rem;line-height:1.15}
+.levels button[aria-pressed="true"]{border-color:var(--minute);color:var(--ink);background:var(--paper)}
+button:focus-visible{outline:3px solid var(--hour);outline-offset:2px}
+.main{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-items:center}
+.panel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.clockbox{position:relative;width:min(100%,44vh);width:min(100%,44svh);min-width:min(100%,260px);max-width:100%;margin:0 auto;aspect-ratio:1}
+svg{width:100%;height:100%;display:block;touch-action:none;user-select:none}
+.face{fill:var(--face);stroke:var(--rim);stroke-width:6}
+.tick{stroke:var(--rim)}
+.num{font-family:var(--display);font-weight:800;font-size:28px;fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.mnum{font-family:var(--body);font-weight:800;font-size:12px;fill:var(--minute);text-anchor:middle;dominant-baseline:central}
+.side{font-family:var(--display);font-weight:800;font-size:22px;fill:var(--muted);text-anchor:middle;opacity:.55}
+.hand-h{stroke:var(--hour);stroke-width:13;stroke-linecap:round}
+.hand-m{stroke:var(--minute);stroke-width:8;stroke-linecap:round}
+.knob{fill:var(--rim)}
+.wedge{fill:var(--wedge)}
+.grab{cursor:grab}
+
+.say{background:var(--paper);border:2px solid var(--line);border-radius:20px;padding:14px 16px;text-align:center;display:flex;flex-direction:column;gap:4px}
+.say .label{font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.say .ch{font-family:var(--display);font-weight:800;font-size:clamp(1.6rem,7vw,2.6rem);line-height:1.15;text-wrap:balance}
+.say .ch .m{color:var(--minute)} .say .ch .h{color:var(--hour)}
+.say .de{color:var(--muted);font-weight:700}
+.speak{display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:8px}
+.speak .play{font:inherit;font-weight:800;border:0;border-radius:999px;padding:10px 14px;min-height:46px;background:var(--hour);color:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.speak .play svg{width:18px;height:18px;fill:currentColor}
+.speak .vb{font:inherit;font-size:.85rem;font-weight:800;border:2px solid var(--line);border-radius:999px;padding:8px 10px;min-height:40px;background:transparent;color:var(--muted);cursor:pointer}
+.speak .vb[aria-pressed="true"]{border-color:var(--hour);color:var(--ink)}
+.say .dig{font-family:var(--display);font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+
+.row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+#controls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+#check .btn,#nextRow .btn{flex:1;max-width:420px}
+.btn{font:inherit;font-weight:800;font-size:1.05rem;border:0;border-radius:14px;padding:12px 8px;min-height:56px;cursor:pointer;background:var(--paper);color:var(--ink);border:2px solid var(--line);min-width:0;font-size:1.15rem}
+.btn.primary{background:var(--minute);border-color:var(--minute);color:#1f1205}
+.btn.h{color:var(--hour)} .btn.m{color:var(--minute)}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opts .btn{font-family:var(--display);font-size:1.3rem;padding:12px}
+.opts .btn.right{background:var(--good);border-color:var(--good);color:#06210f}
+.opts .btn.wrong{border-color:var(--bad);color:var(--bad)}
+.feedback{text-align:center;font-family:var(--display);font-weight:800;font-size:1.4rem;min-height:1.6em;margin-block:-4px}
+.feedback:empty{min-height:0;margin:0}
+.feedback.ok{color:var(--good)} .feedback.no{color:var(--bad)}
+.hint{font-size:.9rem;color:var(--muted);text-align:center;margin:0;max-width:60ch;margin-inline:auto}
+.hint b.h{color:var(--hour)} .hint b.m{color:var(--minute)}
+/* tablet portrait */
+@media (min-width:700px) and (min-height:600px){html{font-size:120%}}
+@media (min-width:700px){
+  .wrap{max-width:780px;gap:18px;padding-block:24px 40px}
+  .levels button{font-size:.95rem}
+  .clockbox{width:min(100%,560px,50vh);width:min(100%,560px,50svh)}
+  .panel{gap:16px}
+  .say{padding:20px 24px}
+}
+/* tablet / phone landscape: clock left, panel right */
+@media (orientation:landscape) and (min-width:640px){
+  .wrap{max-width:1180px}
+  .main{grid-template-columns:minmax(0,1.05fr) minmax(300px,1fr);gap:clamp(16px,3vw,40px)}
+  .clockbox{width:min(100%,640px,74vh);width:min(100%,640px,74svh)}
+  .top{flex-direction:row;flex-wrap:nowrap;align-items:center;gap:16px}
+  header{flex:0 0 auto;gap:16px}
+  .tabs{flex:1 1 auto;max-width:520px}
+  .levels{flex:0 1 380px}
+}
+@media (orientation:landscape) and (max-height:520px){
+  .wrap{padding-block:8px 16px;gap:8px}
+  .top{flex-wrap:wrap}
+  .clockbox{width:min(100%,82vh);width:min(100%,82svh)}
+  .hint{display:none}
+  .say .ch{font-size:1.6rem}
+}
+@media (prefers-reduced-motion:no-preference){.hands g{transition:transform .25s ease}.hands.dragging g{transition:none}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+  <header>
+    <h1>Uhrzyt <span>lerne</span></h1>
+    <div class="score" id="score" aria-live="polite">★ 0</div>
+  </header>
+
+  <nav class="tabs" role="group" aria-label="Modus">
+    <button id="t-lern" data-mode="lern" aria-pressed="true">Üebe</button>
+    <button id="t-stell" data-mode="stell" aria-pressed="false">Stell d'Uhr</button>
+    <button id="t-luege" data-mode="luege" aria-pressed="false">Wie spoot?</button>
+  </nav>
+
+  <div class="levels" role="group" aria-label="Stufe">
+    <button id="l1" data-lvl="1" aria-pressed="false">Ganzi &amp; Halbi</button>
+    <button id="l2" data-lvl="2" aria-pressed="false">+ Viertel</button>
+    <button id="l3" data-lvl="3" aria-pressed="true">Alli 5 Minute</button>
+  </div>
+  </div>
+
+  <main class="main">
+  <div class="clockbox">
+    <svg id="clock" viewBox="-28 -28 356 356" aria-label="Uhr">
+      <circle class="face" cx="150" cy="150" r="132"/>
+      <path id="wedge" class="wedge" d=""/>
+      <text class="side" x="200" y="214">ab</text>
+      <text class="side" x="100" y="214">vor</text>
+      <g id="ticks"></g>
+      <g id="nums"></g>
+      <g class="hands" id="hands">
+        <g id="gh"><line class="hand-h" x1="150" y1="150" x2="150" y2="82"/></g>
+        <g id="gm"><line class="hand-m" x1="150" y1="150" x2="150" y2="38"/></g>
+      </g>
+      <circle class="knob" cx="150" cy="150" r="9"/>
+    </svg>
+  </div>
+
+  <div class="panel">
+  <section class="say" id="say" aria-live="polite">
+    <span class="label" id="sayLabel">Mer seit</span>
+    <span class="ch" id="ch"></span>
+    <span class="de" id="de"></span>
+    <span class="dig" id="dig"></span>
+    <div class="speak" id="speak">
+      <button class="play" id="play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>Vorläse</button>
+      <button class="vb" id="v-ch" data-v="ch" aria-pressed="true">Dialekt</button>
+      <button class="vb" id="v-de" data-v="de" aria-pressed="false">Hochdütsch</button>
+    </div>
+  </section>
+
+  <div id="controls" class="row">
+    <button class="btn h" id="hm" aria-label="Eis Stund zrugg">− Std</button>
+    <button class="btn m" id="mm" aria-label="Füüf Minute zrugg">− 5</button>
+    <button class="btn m" id="mp" aria-label="Füüf Minute vorwärts">+ 5</button>
+    <button class="btn h" id="hp" aria-label="Eis Stund vorwärts">+ Std</button>
+  </div>
+  <div id="check" class="row" hidden>
+    <button class="btn primary" id="go">Prüefe</button>
+  </div>
+  <div id="opts" class="opts" hidden></div>
+  <div class="feedback" id="fb"></div>
+  <div class="row" id="nextRow" hidden><button class="btn primary" id="next">Nöchschti Uufgab</button></div>
+
+  <p class="hint" id="hint">Zieh de <b class="m">langi oranschi Zeiger</b> für d'Minute und de <b class="h">churzi blaui Zeiger</b> für d'Stund. Rächts isch «ab», links isch «vor».</p>
+  </div>
+  </main>
+</div>
+
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const CH=["zwölfi","eis","zwei","drüü","vieri","füfi","sächsi","sibni","achti","nüüni","zäni","elfi","zwölfi"];
+const DE=["zwölf","eins","zwei","drei","vier","fünf","sechs","sieben","acht","neun","zehn","elf","zwölf"];
+
+function phrase(h,m){
+  const H=h%12||12, N=H%12+1;
+  const hc=`<span class="h">${CH[H]}</span>`, nc=`<span class="h">${CH[N]}</span>`;
+  const M=t=>`<span class="m">${t}</span>`;
+  const map={
+    0:[`Es isch ${hc}`, H===1?"ein Uhr":`${DE[H]} Uhr`],
+    5:[`${M("füüf ab")} ${hc}`,`fünf nach ${DE[H]}`],
+    10:[`${M("zäh ab")} ${hc}`,`zehn nach ${DE[H]}`],
+    15:[`${M("Viertel ab")} ${hc}`,`Viertel nach ${DE[H]}`],
+    20:[`${M("zwänzg ab")} ${hc}`,`zwanzig nach ${DE[H]}`],
+    25:[`${M("füüf vor halbi")} ${nc}`,`fünf vor halb ${DE[N]}`],
+    30:[`${M("halbi")} ${nc}`,`halb ${DE[N]}`],
+    35:[`${M("füüf ab halbi")} ${nc}`,`fünf nach halb ${DE[N]}`],
+    40:[`${M("zwänzg vor")} ${nc}`,`zwanzig vor ${DE[N]}`],
+    45:[`${M("Viertel vor")} ${nc}`,`Viertel vor ${DE[N]}`],
+    50:[`${M("zäh vor")} ${nc}`,`zehn vor ${DE[N]}`],
+    55:[`${M("füüf vor")} ${nc}`,`fünf vor ${DE[N]}`]
+  };
+  return {ch:map[m][0], de:map[m][1], plain:map[m][0].replace(/<[^>]+>/g,"")};
+}
+/* text to speech */
+let cur=null, voiceMode="ch";
+try{voiceMode=localStorage.getItem("uhr-voice")||"ch"}catch(e){}
+const tts="speechSynthesis" in window;
+function pickVoice(){
+  const vs=tts?speechSynthesis.getVoices():[];
+  return vs.find(v=>/de[-_]CH/i.test(v.lang))||vs.find(v=>/^de/i.test(v.lang))||null;
+}
+function speak(){
+  if(!tts||!cur) return;
+  // German voices read the dialect spelling better without doubled vowels
+  const txt=voiceMode==="ch"?cur.plain.replace(/üü/g,"ü").replace(/zwänzg/g,"zwänzig"):(/Uhr$/.test(cur.de)?"Es ist "+cur.de:cur.de);
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(txt); const v=pickVoice();
+  if(v){u.voice=v;u.lang=v.lang}else u.lang="de-CH";
+  u.rate=.85; speechSynthesis.speak(u);
+}
+const dig=(h,m)=>`${h%12||12}:${String(m).padStart(2,"0")}`;
+
+/* clock face */
+const ticks=$("ticks"), nums=$("nums"), NS="http://www.w3.org/2000/svg";
+const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e};
+for(let i=0;i<60;i++){
+  const a=i*6*Math.PI/180, big=i%5===0, r1=big?116:122, r2=128;
+  ticks.append(el("line",{class:"tick",x1:150+r1*Math.sin(a),y1:150-r1*Math.cos(a),x2:150+r2*Math.sin(a),y2:150-r2*Math.cos(a),"stroke-width":big?4:1.5}));
+}
+for(let i=1;i<=12;i++){
+  const a=i*30*Math.PI/180;
+  const t=el("text",{class:"num",x:150+96*Math.sin(a),y:150-96*Math.cos(a)});t.textContent=i;nums.append(t);
+  const mt=el("text",{class:"mnum",x:150+148*Math.sin(a),y:150-148*Math.cos(a)});mt.textContent=String(i*5%60).padStart(2,"0");nums.append(mt);
+}
+
+/* state */
+let h=3, m=15, mode="lern", lvl=3, score=0, target=null, locked=false;
+let hAngle=0, mAngle=0;
+try{score=+localStorage.getItem("uhr-score")||0}catch(e){}
+
+function wedgePath(min){
+  if(min===0) return "";
+  const a=min*6*Math.PI/180, r=130, x=150+r*Math.sin(a), y=150-r*Math.cos(a);
+  return `M150 150 L150 20 A${r} ${r} 0 ${min>30?1:0} 1 ${x} ${y} Z`;
+}
+function setAngle(cur,next){ // shortest rotation, keeps animation smooth across 12
+  let d=((next-cur)%360+540)%360-180; return cur+d;
+}
+function draw(){
+  mAngle=setAngle(mAngle,m*6);
+  hAngle=setAngle(hAngle,((h%12)+m/60)*30);
+  $("gm").style.transform=`rotate(${mAngle}deg)`;
+  $("gh").style.transform=`rotate(${hAngle}deg)`;
+  $("gm").style.transformOrigin=$("gh").style.transformOrigin="150px 150px";
+  $("wedge").setAttribute("d",wedgePath(m));
+  if(mode==="lern"){
+    const p=phrase(h,m);
+    $("ch").innerHTML=p.ch; $("de").textContent="Hochdütsch: "+p.de; $("dig").textContent=dig(h,m);
+    cur=p; $("speak").hidden=!tts;
+  }
+}
+function showTarget(){
+  if(mode==="stell"){
+    const p=phrase(target.h,target.m);
+    $("sayLabel").textContent="Stell d'Uhr uf";
+    $("ch").innerHTML=p.ch; $("de").textContent=""; $("dig").textContent="";
+    cur=p; $("speak").hidden=!tts;
+  } else if(mode==="luege"){
+    cur=null; $("speak").hidden=true;
+    $("sayLabel").textContent="Wie spoot isch es?";
+    $("ch").innerHTML="?"; $("de").textContent=""; $("dig").textContent="";
+  }
+}
+function randTime(){
+  const pool={1:[0,30],2:[0,15,30,45],3:[0,5,10,15,20,25,30,35,40,45,50,55]}[lvl];
+  return {h:1+Math.floor(Math.random()*12), m:pool[Math.floor(Math.random()*pool.length)]};
+}
+function setScore(d){score=Math.max(0,score+d);$("score").textContent="★ "+score;try{localStorage.setItem("uhr-score",score)}catch(e){}}
+
+function newTask(){
+  locked=false; $("fb").textContent=""; $("fb").className="feedback"; $("nextRow").hidden=true;
+  target=randTime();
+  if(mode==="stell"){ h=12; m=0; draw(); showTarget(); }
+  if(mode==="luege"){
+    h=target.h; m=target.m; draw(); showTarget();
+    const set=new Map([[`${target.h}:${target.m}`,target]]);
+    while(set.size<3){
+      // tricky distractors: same minute other hour, or mirrored ab/vor
+      const r=Math.random(), t= r<.4?{h:target.h%12+1,m:target.m}: r<.7?{h:target.h,m:(60-target.m)%60}:randTime();
+      set.set(`${t.h}:${t.m}`,t);
+    }
+    const arr=[...set.values()].sort(()=>Math.random()-.5);
+    const box=$("opts"); box.innerHTML="";
+    arr.forEach((t,i)=>{
+      const b=document.createElement("button"); b.className="btn"; b.id="opt"+i;
+      b.textContent=phrase(t.h,t.m).plain;
+      b.onclick=()=>{
+        if(locked) return;
+        const ok=t.h===target.h&&t.m===target.m;
+        if(ok){ locked=true; b.classList.add("right"); win(); }
+        else { b.classList.add("wrong"); lose(); }
+      };
+      box.append(b);
+    });
+  }
+}
+function win(){
+  const p=phrase(target.h,target.m);
+  $("fb").textContent=["Super!","Bravo!","Genau so!","Toll gmacht!"][Math.floor(Math.random()*4)]+" ★";
+  $("fb").className="feedback ok"; setScore(1);
+  $("sayLabel").textContent="Richtig"; $("ch").innerHTML=p.ch; $("de").textContent="Hochdütsch: "+p.de; $("dig").textContent=dig(target.h,target.m);
+  cur=p; $("speak").hidden=!tts; speak();
+  $("nextRow").hidden=false;
+}
+function lose(){ $("fb").textContent="Fasch! Probier nomal."; $("fb").className="feedback no"; }
+
+function setMode(md){
+  mode=md;
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.mode===md));
+  $("controls").hidden=md==="luege"; $("check").hidden=md!=="stell"; $("opts").hidden=md!=="luege";
+  $("hint").hidden=md==="luege";
+  $("fb").textContent=""; $("nextRow").hidden=true;
+  if(md==="lern"){ $("sayLabel").textContent="Mer seit"; draw(); } else newTask();
+}
+
+/* controls */
+function step(dm){ let t=h*60+m+dm; t=((t%720)+720)%720; h=Math.floor(t/60)||12; m=t%60; draw(); }
+$("mp").onclick=()=>step(5); $("mm").onclick=()=>step(-5);
+$("hp").onclick=()=>step(60); $("hm").onclick=()=>step(-60);
+$("go").onclick=()=>{ if(locked) return; if(h%12===target.h%12&&m===target.m){locked=true;win();} else lose(); };
+$("next").onclick=()=>{newTask(); if(mode==="stell") speak();};
+$("play").onclick=speak;
+document.querySelectorAll(".vb").forEach(b=>{b.setAttribute("aria-pressed",b.dataset.v===voiceMode);b.onclick=()=>{
+  voiceMode=b.dataset.v; document.querySelectorAll(".vb").forEach(x=>x.setAttribute("aria-pressed",x===b));
+  try{localStorage.setItem("uhr-voice",voiceMode)}catch(e){} speak();
+}});
+if(tts) speechSynthesis.onvoiceschanged=()=>{};
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+document.querySelectorAll(".levels button").forEach(b=>b.onclick=()=>{
+  lvl=+b.dataset.lvl; document.querySelectorAll(".levels button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+  if(mode!=="lern") newTask();
+});
+
+/* dragging */
+const svg=$("clock"); let drag=null;
+function pt(e){const r=svg.getBoundingClientRect();const s=356/r.width;return{x:(e.clientX-r.left)*s-28-150,y:(e.clientY-r.top)*s-28-150}}
+const angOf=p=>(Math.atan2(p.x,-p.y)*180/Math.PI+360)%360;
+svg.addEventListener("pointerdown",e=>{
+  if(mode==="luege"||locked) return;
+  const p=pt(e), d=Math.hypot(p.x,p.y), a=angOf(p);
+  const hA=((h%12)+m/60)*30, diff=Math.abs(((a-hA)%360+540)%360-180);
+  drag = (d<78 && diff<35) ? "h" : "m";
+  svg.setPointerCapture(e.pointerId); $("hands").classList.add("dragging"); move(e);
+});
+function move(e){
+  if(!drag) return;
+  const a=angOf(pt(e));
+  if(drag==="m"){
+    const nm=Math.round(a/30)*5%60;
+    if(m>=45&&nm<15) step(60-m+nm); else if(m<15&&nm>=45) step(-(m+60-nm)); else if(nm!==m){m=nm;draw();}
+  } else {
+    let nh=Math.round(a/30)%12||12; if(nh!==h){h=nh;draw();}
+  }
+}
+svg.addEventListener("pointermove",move);
+const end=()=>{drag=null;$("hands").classList.remove("dragging")};
+svg.addEventListener("pointerup",end); svg.addEventListener("pointercancel",end);
+
+setScore(0); draw();
+if(document.querySelector('link[rel="manifest"]')&&"serviceWorker" in navigator){
+  try{navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(e){}
+}
+})();
+</script>
+
+</body>
+</html>
