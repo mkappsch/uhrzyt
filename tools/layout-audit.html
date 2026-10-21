@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Uhrzyt layout audit</title>
+<!--
+  Layout audit for the Uhrzyt app.
+  Open it from the same server as the app, e.g. http://localhost:8765/tools/layout-audit.html
+  It loads ../index.html in frames of many screen sizes, in both languages, clicks through every state
+  (practice, a miss, two misses, "show me", the quiz, a right answer, both dialogs) and reports anything that
+  does not fit: page taller than the screen, sideways scrolling, buttons under 44 px, cut-off or wrapping labels,
+  a crowded header, dialogs that need scrolling. Saved settings (uhr-*) are restored afterwards.
+  For automation: window.auditDone resolves to the list of results.
+-->
+<style>
+:root{--bg:#f5f7f6;--paper:#fff;--ink:#1f2a33;--muted:#5f6f78;--ok:#2f9e5b;--bad:#d64545;--line:#d6e0dc;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#141b20;--paper:#1d262d;--ink:#eef2f4;--muted:#9fb0b9;--ok:#4cc47e;--bad:#ff7070;--line:#33424c;color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,sans-serif}
+main{max-width:960px;margin:0 auto;padding:24px 16px}
+h1{font-size:1.4rem;margin:0 0 4px}
+p{margin:0 0 16px;color:var(--muted)}
+button{font:inherit;font-weight:700;padding:10px 18px;border-radius:10px;border:0;background:var(--ink);color:var(--bg);cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+#status{margin:12px 0;font-weight:700}
+#status.ok{color:var(--ok)} #status.bad{color:var(--bad)}
+table{width:100%;border-collapse:collapse;background:var(--paper);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+td.res{font-weight:700} td.res.ok{color:var(--ok)} td.res.bad{color:var(--bad)}
+td ul{margin:0;padding-left:18px}
+.stage{position:absolute;left:-20000px;top:0}
+</style>
+</head>
+<body>
+<main>
+  <h1>Uhrzyt layout audit</h1>
+  <p>Every size in both languages, every state of the app. Each line should read OK before a push.</p>
+  <button id="run">Run audit</button>
+  <div id="status"></div>
+  <table><thead><tr><th>Screen</th><th>Language</th><th>Clock</th><th>Result</th></tr></thead><tbody id="rows"></tbody></table>
+</main>
+<div class="stage" id="stage"></div>
+<script>
+const SIZES=[[320,640],[360,640],[360,740],[390,844],[412,915],[568,320],[640,360],[740,360],[780,330],[915,412],
+  [768,1024],[820,1180],[1024,768],[1180,820],[1280,720],[1440,900],[1920,1080],[900,1000],[700,560]];
+// Swiss German without the 24 h display, Standard German with it: both languages and both task kinds get covered
+const RUNS=[{lang:"ch",digi:"off"},{lang:"de",digi:"on"}];
+
+/* runs inside the app frame */
+function audit(){
+  const $=id=>document.getElementById(id), vw=innerWidth, vh=innerHeight, issues=new Set();
+  const vis=e=>e&&!e.closest("[hidden]")&&e.getClientRects().length;
+  const lines=el=>{const r=document.createRange(); r.selectNodeContents(el); return new Set([...r.getClientRects()].filter(x=>x.width>2).map(x=>Math.round(x.top/6))).size;};
+  const states={
+    "practice":()=>$("t-lern").click(),
+    "set clock, 1 miss":()=>{ $("t-stell").click(); $("go").click(); },
+    "set clock, 2 misses":()=>{ $("t-stell").click(); $("go").click(); $("go").click(); },
+    "set clock, shown":()=>{ $("t-stell").click(); $("go").click(); $("go").click(); $("show").click(); },
+    "quiz":()=>$("t-luege").click(),
+    "quiz, 2 misses":()=>{ $("t-luege").click(); $("opts").querySelectorAll(".btn:not([data-ok])").forEach(b=>b.click()); },
+    "quiz, right":()=>{ $("t-luege").click(); $("opts").querySelector("[data-ok]").click(); },
+  };
+  const groups={tabs:".tabs button",controls:"#controls .btn",answers:"#opts .btn",action:"#check .btn, #nextRow .btn, #showRow .btn",read:"#play",settings:"#gear",score:"#score"};
+  const hd=document.querySelector("header"), h1=document.querySelector("h1");
+  let clock=0;
+  for(let rep=0;rep<3;rep++) for(const [name,go] of Object.entries(states)){
+    go(); scrollTo(0,0); const doc=document.documentElement;
+    if(doc.scrollHeight>vh+1) issues.add(`${name}: page ${doc.scrollHeight}px tall on a ${vh}px screen`);
+    if(doc.scrollWidth>vw+1) issues.add(`${name}: scrolls sideways (${doc.scrollWidth}px)`);
+    if(hd.scrollWidth>hd.clientWidth+1||h1.getBoundingClientRect().right>$("score").getBoundingClientRect().left-2) issues.add("header crowded");
+    const c=$("clock").getBoundingClientRect(); clock=Math.max(clock,Math.round(Math.min(c.width,c.height)));
+    for(const [g,sel] of Object.entries(groups)) for(const b of document.querySelectorAll(sel)){
+      if(!vis(b)) continue;
+      const r=b.getBoundingClientRect(), t=g==="score"?"★":b.textContent.trim().slice(0,18)||b.id;
+      if(r.height<44||r.width<44) issues.add(`${g} "${t}" only ${Math.round(r.width)}×${Math.round(r.height)}px`);
+      if(b.scrollWidth>b.clientWidth+1) issues.add(`${g} "${t}" text cut off`);
+      if(r.bottom>vh+1||r.right>vw+1) issues.add(`${name}: ${g} "${t}" off screen`);
+      if(["tabs","controls","action"].includes(g)&&lines(b)>1) issues.add(`${g} "${t}" wraps`);
+      if(g==="answers"&&lines(b)>2) issues.add(`answer "${t}" needs 3 lines`);
+    }
+  }
+  for(const id of ["settings","album"]){
+    if(id==="album") $("score").click(); else $("settings").showModal();
+    const d=$(id);
+    if(d.scrollHeight>d.clientHeight+1) issues.add(`${id} dialog needs scrolling (${d.scrollHeight}>${d.clientHeight}px)`);
+    for(const b of d.querySelectorAll("button")){
+      const r=b.getBoundingClientRect(), t=b.textContent.trim().slice(0,16);
+      if(r.height<44) issues.add(`${id} "${t}" only ${Math.round(r.height)}px tall`);
+      if(b.scrollWidth>b.clientWidth+1) issues.add(`${id} "${t}" text cut off`);
+    }
+    d.close();
+  }
+  $("t-lern").click();
+  return {issues:[...issues],clock};
+}
+
+const stage=document.getElementById("stage"), rows=document.getElementById("rows"), status=document.getElementById("status"), runBtn=document.getElementById("run");
+function load(w,h){
+  return new Promise(res=>{
+    const f=document.createElement("iframe");
+    f.width=w; f.height=h; f.style.border="0";
+    f.onload=()=>setTimeout(()=>res(f),250);
+    f.src="../index.html?audit="+Date.now();
+    stage.append(f);
+  });
+}
+async function runAll(){
+  runBtn.disabled=true; rows.innerHTML=""; status.className=""; status.textContent="Running…";
+  const saved=Object.fromEntries(Object.keys(localStorage).filter(k=>k.startsWith("uhr-")).map(k=>[k,localStorage.getItem(k)]));
+  const results=[];
+  try{
+    await document.fonts.ready;
+    for(const run of RUNS) for(const [w,h] of SIZES){
+      localStorage.setItem("uhr-lang",run.lang); localStorage.setItem("uhr-digi",run.digi); localStorage.setItem("uhr-tip","1");
+      localStorage.setItem("uhr-score","1"); // stay away from sticker milestones
+      const f=await load(w,h);
+      let r;
+      try{ await f.contentDocument.fonts.ready; r=f.contentWindow.eval("("+audit.toString()+")()"); }
+      catch(err){ r={issues:["audit crashed: "+err.message],clock:0}; }
+      f.remove();
+      results.push({size:`${w}×${h}`,lang:run.lang,...r});
+      const tr=document.createElement("tr"), ok=!r.issues.length;
+      tr.innerHTML=`<td>${w}×${h}</td><td>${run.lang==="ch"?"Schwiizerdütsch":"Hochdeutsch · 24 h"}</td><td>${r.clock}px</td><td class="res ${ok?"ok":"bad"}">${ok?"OK":"<ul>"+r.issues.map(i=>`<li>${i}</li>`).join("")+"</ul>"}</td>`;
+      rows.append(tr);
+      status.textContent=`Running… ${results.length} of ${SIZES.length*RUNS.length}`;
+    }
+  } finally {
+    for(const k of Object.keys(localStorage)) if(k.startsWith("uhr-")&&!(k in saved)) localStorage.removeItem(k);
+    for(const [k,v] of Object.entries(saved)) localStorage.setItem(k,v);
+    runBtn.disabled=false;
+  }
+  const bad=results.filter(r=>r.issues.length).length;
+  status.className=bad?"bad":"ok";
+  status.textContent=bad?`${bad} of ${results.length} screens have issues`:`All ${results.length} screens OK`;
+  return results;
+}
+runBtn.onclick=()=>{ window.auditDone=runAll(); };
+window.auditDone=runAll();
+</script>
+</body>
+</html>
