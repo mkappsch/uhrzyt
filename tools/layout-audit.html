@@ -82,8 +82,10 @@ function audit(){
       if(g==="answers"&&lines(b)>2) issues.add(`answer "${t}" needs 3 lines`);
     }
   }
-  for(const id of ["settings","album"]){
-    if(id==="album") $("score").click(); else $("settings").showModal();
+  for(const id of ["settings","langDlg","album"]){
+    if(id==="album") $("score").click();
+    else if(id==="langDlg"){ $("settings").showModal(); $("langPick").click(); }
+    else $("settings").showModal();
     const d=$(id);
     if(d.scrollHeight>d.clientHeight+1) issues.add(`${id} dialog needs scrolling (${d.scrollHeight}>${d.clientHeight}px)`);
     for(const b of d.querySelectorAll("button")){
@@ -91,7 +93,7 @@ function audit(){
       if(r.height<44) issues.add(`${id} "${t}" only ${Math.round(r.height)}px tall`);
       if(b.scrollWidth>b.clientWidth+1) issues.add(`${id} "${t}" text cut off`);
     }
-    d.close();
+    d.close(); if(id==="langDlg") $("settings").close();
   }
   $("t-lern").click();
   return {issues:[...issues],clock};
