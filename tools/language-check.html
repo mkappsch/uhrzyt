@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Uhrzyt language check</title>
+<!--
+  Checks every language of the app, and optionally a new language file that is not loaded by the app yet:
+    tools/language-check.html?file=lang/it.js
+  - required fields and their types
+  - the time rules: all 720 times (12 hours × 60 minutes) must work, be distinct and mark hour and minutes
+  - the texts: missing ones (they fall back to English), unknown ones, wrong types
+  - a preview of all 60 minutes of one hour, to proofread
+-->
+<style>
+:root{--bg:#f5f7f6;--paper:#fff;--ink:#1f2a33;--muted:#5f6f78;--ok:#2f9e5b;--warn:#b7791f;--bad:#d64545;--line:#d6e0dc;--hour:#2a6fdb;--minute:#d9631f;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#141b20;--paper:#1d262d;--ink:#eef2f4;--muted:#9fb0b9;--ok:#4cc47e;--warn:#e6b450;--bad:#ff7070;--line:#33424c;--hour:#6aa2ff;--minute:#ff9a5c;color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:24px 16px}
+h1{font-size:1.4rem;margin:0 0 4px} h2{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 12px;color:var(--muted)}
+form{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+input,select,button{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+input{min-width:240px;flex:1}
+button{font-weight:700;background:var(--ink);color:var(--bg);border:0;cursor:pointer}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.card h3{margin:0 0 6px;font-size:1rem;display:flex;gap:8px;align-items:center}
+.flag{width:22px;height:22px;border-radius:50%;overflow:hidden;display:inline-block;box-shadow:0 0 0 1px var(--line)} .flag svg{width:100%;height:100%;display:block}
+.sum{font-weight:700} .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+.card ul{margin:6px 0 0;padding-left:18px;font-size:.9rem}
+table{width:100%;border-collapse:collapse;background:var(--paper);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:.95rem}
+th,td{text-align:left;padding:5px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+td .h{color:var(--hour);font-weight:700} td .m{color:var(--minute);font-weight:700}
+td.t{font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
+tr.nx td.t::after{content:" ↻";color:var(--hour)}
+#stage{position:absolute;left:-20000px;top:0}
+</style>
+</head>
+<body>
+<main>
+  <h1>Uhrzyt language check</h1>
+  <p>Every language the app loads is checked. To test a new file before adding it to index.html, enter its path.</p>
+  <form id="f"><input id="file" placeholder="lang/it.js (optional)"><button>Check</button></form>
+  <div class="cards" id="cards"></div>
+  <h2>Preview</h2>
+  <p>All minutes of one hour, the way the app shows them. ↻ marks the minutes that already name the next hour.</p>
+  <form id="pf"><select id="plang"></select><select id="phour"></select></form>
+  <table><thead><tr><th>Time</th><th>Phrase</th><th>Second line</th></tr></thead><tbody id="rows"></tbody></table>
+</main>
+<div id="stage"></div>
+<script>
+const $=id=>document.getElementById(id);
+const strip=x=>String(x).replace(/<[^>]+>/g,"").replace(/&shy;|­/g,"");
+const esc=x=>String(x).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+let LANGS={};
+
+/* load the app (its language files fill window.Uhrzyt.langs), plus an optional extra file */
+function loadApp(extra){
+  return new Promise((res,rej)=>{
+    $("stage").innerHTML=""; const f=document.createElement("iframe"); f.width=400; f.height=800;
+    f.onload=()=>{
+      const w=f.contentWindow;
+      if(!w.Uhrzyt) return rej(new Error("the app did not load"));
+      if(!extra) return res(w.Uhrzyt.langs);
+      const s=f.contentDocument.createElement("script"); s.src="../"+extra.replace(/^\.?\//,"");
+      s.onload=()=>res(w.Uhrzyt.langs); s.onerror=()=>rej(new Error("could not load "+extra));
+      f.contentDocument.head.append(s);
+    };
+    f.src="../index.html?langcheck="+Date.now(); $("stage").append(f);
+  });
+}
+
+function check(code, L, ref){
+  const err=[], warn=[], has=(k,t)=>{ const v=L[k]; const ok=t==="regexp"?Object.prototype.toString.call(v)==="[object RegExp]":t==="array"?Array.isArray(v):typeof v===t; if(!ok) err.push(`<b>${k}</b> missing or not a ${t}`); return ok; };
+  ["name","flag","html","tts","read","clock"].forEach(k=>has(k,"string"));
+  ["voice","voiceAny"].forEach(k=>has(k,"regexp"));
+  if(has("say","function")){}
+  if(typeof L.flag==="string"&&!/<svg[\s>]/.test(L.flag)) err.push("<b>flag</b> must be an &lt;svg&gt;");
+  if(!(L.read in LANGS)) err.push(`<b>read</b> "${esc(L.read)}" is not a language code`);
+  if(L.second!==null&&L.second!==undefined&&!(L.second in LANGS)) err.push(`<b>second</b> "${esc(L.second)}" is not a language code (or null)`);
+  if(!Number.isInteger(L.next)||L.next<1||L.next>59) err.push("<b>next</b> must be a minute from 1 to 59");
+  if(has("hours","array")&&(L.hours.length!==13||L.hours.some(x=>typeof x!=="string"||!x))) err.push("<b>hours</b> needs 13 names (index 0–12)");
+  if(L.group&&(!L.groupFlag||!L.dialect)) err.push("a <b>group</b> also needs groupFlag and dialect");
+  // the time rules
+  if(typeof L.say==="function"){
+    const seen=new Map(); let broken=0, noHour=0, noMin=0, hourWord=0;
+    for(let h=1;h<=12;h++) for(let m=0;m<60;m++){
+      let out; try{ out=L.say(h,m); }catch(e){ if(broken++<3) err.push(`say(${h},${m}) fails: ${esc(e.message)}`); continue; }
+      const t=strip(out);
+      if(typeof out!=="string"||!t.trim()||/undefined|NaN|null|\[object/.test(t)){ if(broken++<3) err.push(`say(${h},${m}) gives "${esc(t)}"`); continue; }
+      if(!/class="h"/.test(out)) noHour++;
+      if(m>0&&!/class="m"/.test(out)) noMin++;
+      const H=h%12||12, N=H%12+1, hs=(out.match(/class="h">([^<]*)</)||[])[1];
+      if(hs&&L.hours&&hs!==L.hours[m>=L.next?N:H]) hourWord++;
+      const key=t.trim().toLowerCase(); seen.set(key,(seen.get(key)||[]).concat(`${H}:${String(m).padStart(2,"0")}`));
+    }
+    if(broken) err.push(`${broken} of 720 times do not work`);
+    const dup=[...seen.values()].filter(v=>v.length>1);
+    if(dup.length) err.push(`${dup.length} phrases are used for more than one time, e.g. ${dup.slice(0,2).map(v=>v.join(" = ")).join(", ")}`);
+    if(noHour) warn.push(`${noHour} times have no hour part marked with HR(…)`);
+    if(noMin) warn.push(`${noMin} times have no minute part marked with M(…)`);
+    if(hourWord) warn.push(`${hourWord} times show an hour word other than hours[…] (fine if intended, e.g. German «ein Uhr»); also check <b>next</b>`);
+  }
+  // the texts
+  if(has("texts","object")&&ref){
+    const T=L.texts;
+    const missing=Object.keys(ref).filter(k=>!(k in T)), unknown=Object.keys(T).filter(k=>!(k in ref));
+    if(missing.length) warn.push(`${missing.length} texts missing (English is used): ${missing.map(esc).join(", ")}`);
+    if(unknown.length) warn.push(`unknown texts (not used by the app): ${unknown.map(esc).join(", ")}`);
+    for(const k of Object.keys(ref)) if(k in T){
+      const a=typeof ref[k], b=typeof T[k];
+      if(a!==b||Array.isArray(ref[k])!==Array.isArray(T[k])){ err.push(`text <b>${k}</b> should be a ${Array.isArray(ref[k])?"list":a==="function"?"function, e.g. n=>`…${n}…`":a}`); continue; }
+      if(a==="function"){ try{ const r=k==="newMedal"?T[k]("🥉","5 min"):T[k](3); if(typeof r!=="string"||/undefined/.test(r)) err.push(`text <b>${k}</b>(…) gives "${esc(r)}"`);}catch(e){ err.push(`text <b>${k}</b> fails: ${esc(e.message)}`);} }
+      else if(Array.isArray(ref[k])&&T[k].length!==ref[k].length) err.push(`text <b>${k}</b> needs ${ref[k].length} entries`);
+      else if(a==="object"){ const miss=Object.keys(ref[k]).filter(x=>!(x in T[k])); if(miss.length) err.push(`text <b>${k}</b> is missing ${miss.join(", ")}`); }
+    }
+    if(T.sub!==undefined&&!L.second&&T.sub) warn.push("<b>sub</b> is set but there is no <b>second</b> language");
+    if(L.second&&!T.sub) warn.push("<b>second</b> is set; <b>sub</b> could name it (e.g. \"Züritüütsch: \")");
+  }
+  return {err,warn};
+}
+
+function card(code,L,r){
+  const c=document.createElement("div"); c.className="card";
+  const state=r.err.length?["bad",`${r.err.length} error${r.err.length>1?"s":""}`]:r.warn.length?["warn",`OK, ${r.warn.length} note${r.warn.length>1?"s":""}`]:["ok","OK"];
+  c.innerHTML=`<h3><span class="flag">${L.flag||""}</span>${esc(strip(L.group?`${L.group} (${L.dialect})`:L.name||code))} <small>${esc(code)}</small></h3>
+    <div class="sum ${state[0]}">${state[1]}</div>
+    ${r.err.length||r.warn.length?`<ul>${r.err.map(x=>`<li class="bad">${x}</li>`).join("")}${r.warn.map(x=>`<li class="warn">${x}</li>`).join("")}</ul>`:""}`;
+  return c;
+}
+
+function preview(){
+  const L=LANGS[$("plang").value], H=+$("phour").value; if(!L) return;
+  const S=L.second&&LANGS[L.second];
+  $("rows").innerHTML=Array.from({length:60},(_,m)=>{
+    let p,s=""; try{ p=L.say(H,m); }catch(e){ p=`<span class="bad">${esc(e.message)}</span>`; }
+    try{ if(S) s=strip(S.say(H,m)); }catch(e){}
+    return `<tr class="${m>=L.next?"nx":""}"><td class="t">${H}:${String(m).padStart(2,"0")}</td><td>${p}</td><td>${esc(s)}</td></tr>`;
+  }).join("");
+}
+
+async function run(){
+  $("cards").innerHTML="<p>Loading…</p>";
+  const extra=$("file").value.trim();
+  try{ LANGS=await loadApp(extra); }catch(e){ $("cards").innerHTML=`<p class="bad">${esc(e.message)}</p>`; return; }
+  const ref=(LANGS.en||{}).texts;
+  $("cards").innerHTML="";
+  for(const [k,L] of Object.entries(LANGS)) $("cards").append(card(k,L,check(k,L,ref)));
+  const keep=$("plang").value;
+  $("plang").innerHTML=Object.entries(LANGS).map(([k,L])=>`<option value="${esc(k)}">${esc(strip(L.name||k))}</option>`).join("");
+  $("plang").value=keep in LANGS?keep:(extra&&Object.keys(LANGS).pop())||Object.keys(LANGS)[0];
+  preview();
+}
+$("phour").innerHTML=Array.from({length:12},(_,i)=>`<option ${i+1===3?"selected":""}>${i+1}</option>`).join("");
+$("plang").onchange=$("phour").onchange=preview;
+$("f").onsubmit=e=>{ e.preventDefault(); run(); };
+$("file").value=new URLSearchParams(location.search).get("file")||"";
+run();
+</script>
+</body>
+</html>
