@@ -38,14 +38,15 @@ td ul{margin:0;padding-left:18px}
   <p>Every size in both languages, every state of the app. Each line should read OK before a push.</p>
   <button id="run">Run audit</button>
   <div id="status"></div>
-  <table><thead><tr><th>Screen</th><th>Language</th><th>Clock</th><th>Result</th></tr></thead><tbody id="rows"></tbody></table>
+  <table><thead><tr><th>Screen</th><th>Language · level</th><th>Clock</th><th>Result</th></tr></thead><tbody id="rows"></tbody></table>
 </main>
 <div class="stage" id="stage"></div>
 <script>
 const SIZES=[[320,640],[360,640],[360,740],[390,844],[412,915],[568,320],[640,360],[740,360],[780,330],[915,412],
   [768,1024],[820,1180],[1024,768],[1180,820],[1280,720],[1440,900],[1920,1080],[900,1000],[700,560]];
-// Swiss German without the 24 h display, Standard German with it: both languages and both task kinds get covered
-const RUNS=[{lang:"ch",digi:"off"},{lang:"de",digi:"on"}];
+// both languages, both task kinds (spoken / 24 h) and the shortest and longest phrases (levels 1 and 4)
+const RUNS=[{lang:"ch",digi:"off",lvl:4},{lang:"de",digi:"on",lvl:4},{lang:"ch",digi:"on",lvl:1}];
+const LVL={1:"Halbi",2:"Viertel",3:"5 Min",4:"1 Min"};
 
 /* runs inside the app frame */
 function audit(){
@@ -114,14 +115,15 @@ async function runAll(){
     for(const run of RUNS) for(const [w,h] of SIZES){
       localStorage.setItem("uhr-lang",run.lang); localStorage.setItem("uhr-digi",run.digi); localStorage.setItem("uhr-tip","1");
       localStorage.setItem("uhr-score","1"); // stay away from sticker milestones
+      localStorage.setItem("uhr-state",JSON.stringify({mode:"lern",lvl:run.lvl,h:3,m:0,d:0}));
       const f=await load(w,h);
       let r;
       try{ await f.contentDocument.fonts.ready; r=f.contentWindow.eval("("+audit.toString()+")()"); }
       catch(err){ r={issues:["audit crashed: "+err.message],clock:0}; }
       f.remove();
-      results.push({size:`${w}×${h}`,lang:run.lang,...r});
+      results.push({size:`${w}×${h}`,lang:run.lang,lvl:run.lvl,...r});
       const tr=document.createElement("tr"), ok=!r.issues.length;
-      tr.innerHTML=`<td>${w}×${h}</td><td>${run.lang==="ch"?"Schwiizerdütsch":"Hochdeutsch · 24 h"}</td><td>${r.clock}px</td><td class="res ${ok?"ok":"bad"}">${ok?"OK":"<ul>"+r.issues.map(i=>`<li>${i}</li>`).join("")+"</ul>"}</td>`;
+      tr.innerHTML=`<td>${w}×${h}</td><td>${run.lang==="ch"?"Schwiizerdütsch":"Hochdeutsch"}${run.digi==="on"?" · 24 h":""} · ${LVL[run.lvl]}</td><td>${r.clock}px</td><td class="res ${ok?"ok":"bad"}">${ok?"OK":"<ul>"+r.issues.map(i=>`<li>${i}</li>`).join("")+"</ul>"}</td>`;
       rows.append(tr);
       status.textContent=`Running… ${results.length} of ${SIZES.length*RUNS.length}`;
     }

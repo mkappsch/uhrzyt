@@ -134,6 +134,9 @@ svg{width:100%;height:100%;display:block;touch-action:none;user-select:none}
 .say .ch .m{color:var(--minute)} .say .ch .h{color:var(--hour)}
 .say .sub{font-size:clamp(.85rem,3.6cqi,1.1rem)}
 .say .de{color:var(--muted);font-weight:700}
+.say .de:not(:empty)::before{content:attr(data-pre)}
+/* short screens: the line under the phrase stays one line */
+@media (max-height:500px){.say .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.say .de::before{content:none}}
 .say .dig{font-family:var(--display);font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
 .say .dig:not(:empty)::before{content:" · "}
 .speak{position:absolute;right:var(--gap);top:50%;transform:translateY(-50%)}
@@ -206,7 +209,7 @@ dialog#album::backdrop{background:rgba(10,15,20,.55)}
 @media (max-height:500px){
   .sheet{padding:12px 14px;gap:10px} .sheet h2{font-size:1.3rem}
   .set-row{display:grid;grid-template-columns:5.2em minmax(0,1fr);align-items:center;gap:8px}
-  .levels{grid-template-columns:repeat(3,1fr)} .levels small{display:none}
+  .levels{grid-template-columns:repeat(4,1fr)} .levels small{display:none}
   .levels button,.langs button{min-height:44px;justify-content:center;text-align:center;padding:4px 6px;font-size:.95rem}
 }
 
@@ -220,7 +223,7 @@ dialog#album::backdrop{background:rgba(10,15,20,.55)}
 @keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
 .burst{position:fixed;z-index:20;pointer-events:none;font-size:34px;line-height:1;color:#ffc531;text-shadow:0 0 10px rgba(255,197,49,.7),0 1px 0 rgba(0,0,0,.3);left:0;top:0;will-change:transform,opacity}
 @media (prefers-reduced-motion:reduce){.score.pop,.feedback.ok .fb-star,.feedback.no{animation:none}.burst{display:none}}
-@media (prefers-reduced-motion:no-preference){.hands g{transition:transform .25s ease}.hands.dragging g{transition:none}}
+@media (prefers-reduced-motion:no-preference){.hands g{transition:transform .25s ease}.hands.tick g{transition:transform .16s cubic-bezier(.3,1.6,.6,1)}.hands.dragging g{transition:none}}
 </style>
 
 </head>
@@ -311,6 +314,7 @@ dialog#album::backdrop{background:rgba(10,15,20,.55)}
         <button type="button" id="l1" data-lvl="1" aria-pressed="false">Ganzi &amp; Halbi <small>3:00 · 3:30</small></button>
         <button type="button" id="l2" data-lvl="2" aria-pressed="false">+ Viertel <small>3:15 · 3:45</small></button>
         <button type="button" id="l3" data-lvl="3" aria-pressed="true">Alli 5 Minute <small>3:05 · 3:10 …</small></button>
+        <button type="button" id="l4" data-lvl="4" aria-pressed="false">Alli Minute <small>3:07 · 3:42 …</small></button>
       </div>
     </div>
     <div class="set-row">
@@ -347,7 +351,7 @@ const TXT={
     after:"ab",before:"vor",clock:"Uhr",play:"Hochdütsch vorläse",hr:"Std",hrBack:"Eis Stund zrugg",hrFwd:"Eis Stund vorwärts",
     minBack:n=>n+" Minute zrugg",minFwd:n=>n+" Minute vorwärts",
     settings:"Iistellige",level:"Stufe",lang:"Sprooch",sound:"Tön",on:"Ii",off:"Us",done:"Fertig",
-    lvlLong:{1:"Ganzi & Halbi",2:"+ Viertel",3:"Alli 5 Minute"},lvlShort:{1:"Halbi",2:"Viertel",3:"5 Min"},
+    lvlLong:{1:"Ganzi & Halbi",2:"+ Viertel",3:"Alli 5 Minute",4:"Alli Minute"},lvlShort:{1:"Halbi",2:"Viertel",3:"5 Min",4:"1 Min"},
     tipFirst:"Do chasch d'Stufe, d'Sprooch und d'Tön iistelle.",tipHard:"Z'schwär? Do chasch e liechteri Stufe wähle.",
     now:"Jetzt",nowLabel:"Uhr uf jetzt stelle",show:"Zeig mer's",shown:"So gaht's",
     hourWrong:"D'Minute stimmt, d'Stund nöd.",minWrong:"D'Stund stimmt, d'Minute nöd.",bothWrong:"Lueg nomal beidi Zeiger aa.",
@@ -363,7 +367,7 @@ const TXT={
     after:"nach",before:"vor",clock:"Uhr",play:"Vorlesen",hr:"Std",hrBack:"Eine Stunde zurück",hrFwd:"Eine Stunde vorwärts",
     minBack:n=>n+" Minuten zurück",minFwd:n=>n+" Minuten vorwärts",
     settings:"Einstellungen",level:"Stufe",lang:"Sprache",sound:"Töne",on:"An",off:"Aus",done:"Fertig",
-    lvlLong:{1:"Ganze & Halbe",2:"+ Viertel",3:"Alle 5 Minuten"},lvlShort:{1:"Halbe",2:"Viertel",3:"5 Min"},
+    lvlLong:{1:"Ganze & Halbe",2:"+ Viertel",3:"Alle 5 Minuten",4:"Alle Minuten"},lvlShort:{1:"Halbe",2:"Viertel",3:"5 Min",4:"1 Min"},
     tipFirst:"Hier kannst du Stufe, Sprache und Töne einstellen.",tipHard:"Zu schwer? Hier kannst du eine leichtere Stufe wählen.",
     now:"Jetzt",nowLabel:"Uhr auf jetzt stellen",show:"Zeig es mir",shown:"So geht's",
     hourWrong:"Minuten richtig, Stunde nicht.",minWrong:"Stunde richtig, Minuten nicht.",bothWrong:"Schau dir beide Zeiger an.",
@@ -378,32 +382,33 @@ const T=()=>TXT[lang];
 const CH=["zwölfi","eis","zwei","drüü","vieri","füfi","sächsi","sibni","achti","nüüni","zäni","elfi","zwölfi"];
 const DE=["zwölf","eins","zwei","drei","vier","fünf","sechs","sieben","acht","neun","zehn","elf","zwölf"];
 
+/* minute words 1–20 */
+const CHM=["","eis","zwei","drüü","vier","füüf","sächs","sibe","acht","nüün","zäh","elf","zwölf","drizää","vierzää","füfzää","sächzää","sibezää","achzää","nünzää","zwänzg"];
+const DEM=["","eins","zwei","drei","vier","fünf","sechs","sieben","acht","neun","zehn","elf","zwölf","dreizehn","vierzehn","fünfzehn","sechzehn","siebzehn","achtzehn","neunzehn","zwanzig"];
+/* every minute, counted towards the nearest landmark: the full hour, «halbi» or the next hour
+   3:07 sibe ab drüü · 3:23 sibe vor halbi vieri · 3:37 sibe ab halbi vieri · 3:47 drizää vor vieri */
 function phrase(h,m){
   const H=h%12||12, N=H%12+1;
   const hc=`<span class="h">${CH[H]}</span>`, nc=`<span class="h">${CH[N]}</span>`;
   const hd=`<span class="h">${H===1&&m===0?"ein":DE[H]}</span>`, nd=`<span class="h">${DE[N]}</span>`;
   const M=t=>`<span class="m">${t}</span>`;
-  const map={
-    0:[`Es isch ${hc}`, `Es ist ${hd} Uhr`],
-    5:[`${M("füüf ab")} ${hc}`, `${M("fünf nach")} ${hd}`],
-    10:[`${M("zäh ab")} ${hc}`, `${M("zehn nach")} ${hd}`],
-    15:[`${M("Viertel ab")} ${hc}`, `${M("Viertel nach")} ${hd}`],
-    20:[`${M("zwänzg ab")} ${hc}`, `${M("zwanzig nach")} ${hd}`],
-    25:[`${M("füüf vor halbi")} ${nc}`, `${M("fünf vor halb")} ${nd}`],
-    30:[`${M("halbi")} ${nc}`, `${M("halb")} ${nd}`],
-    35:[`${M("füüf ab halbi")} ${nc}`, `${M("fünf nach halb")} ${nd}`],
-    40:[`${M("zwänzg vor")} ${nc}`, `${M("zwanzig vor")} ${nd}`],
-    45:[`${M("Viertel vor")} ${nc}`, `${M("Viertel vor")} ${nd}`],
-    50:[`${M("zäh vor")} ${nc}`, `${M("zehn vor")} ${nd}`],
-    55:[`${M("füüf vor")} ${nc}`, `${M("fünf vor")} ${nd}`]
-  };
+  let ch, de;
+  if(m===0){ ch=`Es isch ${hc}`; de=`Es ist ${hd} Uhr`; }
+  else if(m===15){ ch=`${M("Viertel ab")} ${hc}`; de=`${M("Viertel nach")} ${hd}`; }
+  else if(m===30){ ch=`${M("halbi")} ${nc}`; de=`${M("halb")} ${nd}`; }
+  else if(m===45){ ch=`${M("Viertel vor")} ${nc}`; de=`${M("Viertel vor")} ${nd}`; }
+  else if(m<=20){ ch=`${M(CHM[m]+" ab")} ${hc}`; de=`${M(DEM[m]+" nach")} ${hd}`; }
+  else if(m<30){ ch=`${M(CHM[30-m]+" vor halbi")} ${nc}`; de=`${M(DEM[30-m]+" vor halb")} ${nd}`; }
+  else if(m<40){ ch=`${M(CHM[m-30]+" ab halbi")} ${nc}`; de=`${M(DEM[m-30]+" nach halb")} ${nd}`; }
+  else { ch=`${M(CHM[60-m]+" vor")} ${nc}`; de=`${M(DEM[60-m]+" vor")} ${nd}`; }
   const txt=x=>x.replace(/<[^>]+>/g,"");
-  return {ch:map[m][0], de:map[m][1], chText:txt(map[m][0]), deText:txt(map[m][1])};
+  return {ch, de, chText:txt(ch), deText:txt(de)};
 }
+const nextHourAt=21; // from :21 on, the phrase names the coming hour («nüün vor halbi vieri»)
 /* what the app shows for a phrase in the chosen language */
 const main=p=>lang==="de"?p.de:p.ch;
 const plain=p=>lang==="de"?p.deText:p.chText;
-const sub=p=>lang==="de"?"":T().sub+p.deText;
+const sub=p=>lang==="de"?"":p.deText; // shown with the «Hochdütsch:» prefix from CSS
 /* text to speech: Hochdeutsch only, and only from a real tap on the play button */
 let cur=null, lastDragEnd=0;
 try{localStorage.removeItem("uhr-voice")}catch(e){}
@@ -467,7 +472,7 @@ for(let i=1;i<=12;i++){
 /* the hour number the phrase talks about lights up («halbi vieri» points at the 4) */
 const glowEl=el("circle",{id:"glow",class:"glow",r:19,cx:150,cy:150});
 nums.parentNode.insertBefore(glowEl,nums);
-const hourRef=(hh,mm)=>{const H=hh%12||12; return mm>=25?H%12+1:H;};
+const hourRef=(hh,mm)=>{const H=hh%12||12; return mm>=nextHourAt?H%12+1:H;};
 function glowHour(n){
   document.querySelectorAll(".num.lit").forEach(x=>x.classList.remove("lit"));
   if(!n){ glowEl.classList.remove("on"); return; }
@@ -490,8 +495,8 @@ try{score=+localStorage.getItem("uhr-score")||0}catch(e){}
 try{
   const st=JSON.parse(localStorage.getItem("uhr-state")||"{}");
   if(["lern","stell","luege"].includes(st.mode)) mode=st.mode;
-  if([1,2,3].includes(st.lvl)) lvl=st.lvl;
-  if(st.h>=1&&st.h<=12&&st.m>=0&&st.m<60&&st.m%5===0){h=st.h;m=st.m;day=st.d===720?720:0}
+  if([1,2,3,4].includes(st.lvl)) lvl=st.lvl;
+  if(st.h>=1&&st.h<=12&&Number.isInteger(st.m)&&st.m>=0&&st.m<60){h=st.h;m=st.m;day=st.d===720?720:0}
 }catch(e){}
 let practice={h,m,day};
 function saveState(){try{localStorage.setItem("uhr-state",JSON.stringify({mode,lvl,h:practice.h,m:practice.m,d:practice.day}))}catch(e){}}
@@ -539,7 +544,7 @@ function showTarget(){
   }
 }
 function randTime(){
-  const pool={1:[0,30],2:[0,15,30,45],3:[0,5,10,15,20,25,30,35,40,45,50,55]}[lvl], mm=pool[Math.floor(Math.random()*pool.length)];
+  const pool={1:[0,30],2:[0,15,30,45],3:[0,5,10,15,20,25,30,35,40,45,50,55],4:[...Array(60).keys()]}[lvl], mm=pool[Math.floor(Math.random()*pool.length)];
   if(digital&&mode==="stell"){ const H=6+Math.floor(Math.random()*17); return {h:H%12||12, m:mm, t24:H*60+mm}; } // 06:00 – 22:55
   return {h:1+Math.floor(Math.random()*12), m:mm};
 }
@@ -579,7 +584,7 @@ function newTask(){
     const set=new Map([[`${target.h}:${target.m}`,target]]), H=target.h%12||12;
     while(set.size<3){
       // tricky distractors: for «halbi …» the hour the hand just passed (the classic trap), else the next hour; or mirrored ab/vor
-      const r=Math.random(), t= r<.4?{h:target.m>=25?(H+10)%12+1:H%12+1,m:target.m}: r<.7?{h:target.h,m:(60-target.m)%60}:randTime();
+      const r=Math.random(), t= r<.4?{h:target.m>=nextHourAt?(H+10)%12+1:H%12+1,m:target.m}: r<.7?{h:target.h,m:(60-target.m)%60}:randTime();
       set.set(`${t.h}:${t.m}`,t);
     }
     const arr=[...set.values()].sort(()=>Math.random()-.5);
@@ -615,8 +620,8 @@ function explain(gh,gm){
   const t=T(), names=lang==="de"?DE:CH, H=target.h%12||12, N=H%12+1;
   const hourOk=gh%12===target.h%12, minOk=gm===target.m;
   if(minOk&&!hourOk){
-    if(target.m>=25&&mode==="stell"&&gh%12===N%12) return ["h",t.notYet(names[N])];   // set the hour hand onto the spoken hour
-    if(target.m>=25&&mode==="luege"&&gh%12===(H+11)%12) return ["h",t.almost(names[N])]; // read the hour the hand just passed
+    if(target.m>=nextHourAt&&mode==="stell"&&gh%12===N%12) return ["h",t.notYet(names[N])];   // set the hour hand onto the spoken hour
+    if(target.m>=nextHourAt&&mode==="luege"&&gh%12===(H+11)%12) return ["h",t.almost(names[N])]; // read the hour the hand just passed
     return ["h",t.hourWrong];
   }
   if(hourOk&&!minOk) return ["m",t.minWrong];
@@ -685,7 +690,7 @@ function setMode(md){
 }
 
 /* controls */
-const gran=()=>({1:30,2:15,3:5})[lvl];
+const gran=()=>({1:30,2:15,3:5,4:1})[lvl];
 function snapM(){ const g=gran(); if(m%g){ setTot(Math.round(tot()/g)*g); draw(); } }
 function labelSteps(){ const g=gran(), t=T(); $("mp").textContent="+ "+g; $("mm").textContent="− "+g;
   $("lvlChip").textContent=t.lvlShort[lvl]; $("gear").setAttribute("aria-label",t.settings+" – "+t.level+": "+t.lvlLong[lvl]);
@@ -706,13 +711,16 @@ function applyLang(){
   $("soundLabel").textContent=t.sound; $("done").textContent=t.done;
   $("now").textContent=t.now; $("now").setAttribute("aria-label",t.nowLabel); $("show").textContent=t.show;
   $("extraLabel").textContent=t.extras; $("mute").setAttribute("aria-label",t.soundLong); $("digi").setAttribute("aria-label",t.digiLong);
-  $("albDone").textContent=t.done; setDigi();
+  $("albDone").textContent=t.done; setDigi(); $("de").dataset.pre=t.sub;
   document.querySelectorAll(".levels button").forEach(b=>b.firstChild.textContent=t.lvlLong[b.dataset.lvl]+" ");
   document.querySelectorAll(".langs button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.lang===lang));
   if(!$("tip").hidden&&tipKind) $("tip").textContent=t[tipKind];
   labelSteps(); setSound(soundOn);
 }
+let tickT=0;
 function step(dm){
+  // small steps tick like a clock; bigger ones glide
+  clearTimeout(tickT); $("hands").classList.toggle("tick",Math.abs(dm)<=5); tickT=setTimeout(()=>$("hands").classList.remove("tick"),250);
   // turn the hands the way the button says (a half turn would otherwise go backwards)
   mAngle+=dm*6; hAngle+=dm/2;
   setTot(tot()+dm); draw();
@@ -753,7 +761,13 @@ document.querySelectorAll(".levels button").forEach(b=>b.onclick=()=>{
 });
 
 /* dragging */
-const svg=$("clock"); let drag=null, acc=0, lastA=0, acc0=0, start=0, day0=0;
+const svg=$("clock"); let drag=null, acc=0, lastA=0, acc0=0, start=0, day0=0, lastTick=0;
+/* while dragging, the minute hand jumps whole minutes (6°) so you feel each one; a tiny buzz per minute where phones support it */
+function tickPose(){
+  const tm=Math.round(acc);
+  if(tm!==lastTick){ if(lastTick!==null&&soundOn&&navigator.vibrate) try{navigator.vibrate(8)}catch(e){} lastTick=tm; }
+  pose(tm,tm/60);
+}
 function pt(e){const q=new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM().inverse());return{x:q.x-150,y:q.y-150}}
 const angOf=p=>(Math.atan2(p.x,-p.y)*180/Math.PI+360)%360;
 const angDiff=(a,b)=>Math.abs(((a-b)%360+540)%360-180);
@@ -770,7 +784,7 @@ svg.addEventListener("pointerdown",e=>{
     const nm=Math.round(a/6/gran())*gran()%60; if(nm!==m){m=nm;draw();}
     acc=(h%12)*60+m+((a/6-m)%60+90)%60-30; lastA=a; // finger position in minutes, followed as it turns
     start=(h%12)*60+m; acc0=acc; day0=day;
-    pose(acc,acc/60);
+    lastTick=null; tickPose();
   } else move(e);
 });
 function move(e){
@@ -784,7 +798,7 @@ function move(e){
     const moved=acc-acc0;
     let t=Math.abs(moved)<=g*.2 ? start : Math.abs(moved)<=g ? start+Math.sign(moved)*g : Math.round(acc/g)*g;
     const before=tot(); setTot(t+day0); if(tot()!==before) draw();
-    pose(acc,acc/60);
+    tickPose();
   } else {
     const nh=Math.round((a-m/2)/30+12)%12||12;
     if(nh!==h){ setTot(tot()+((((nh%12)-(h%12))%12+18)%12-6)*60); draw(); } // shortest way, so passing 12 flips morning/afternoon
