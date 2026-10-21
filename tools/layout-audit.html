@@ -45,8 +45,8 @@ td ul{margin:0;padding-left:18px}
 const SIZES=[[320,640],[360,640],[360,740],[390,844],[412,915],[568,320],[640,360],[740,360],[780,330],[915,412],
   [768,1024],[820,1180],[1024,768],[1180,820],[1280,720],[1440,900],[1920,1080],[900,1000],[700,560]];
 // all languages, both task kinds (spoken / 24 h) and the shortest and longest phrases (levels 1 and 4)
-const RUNS=[{lang:"ch",digi:"off",lvl:4},{lang:"de",digi:"on",lvl:4},{lang:"en",digi:"off",lvl:4},{lang:"ch",digi:"on",lvl:1}];
-const LANGS={ch:"Schwiizerdütsch",de:"Hochdeutsch",en:"English"};
+const RUNS=[{lang:"ch",digi:"off",lvl:4},{lang:"de",digi:"on",lvl:4},{lang:"en",digi:"off",lvl:4},{lang:"fr",digi:"on",lvl:4},{lang:"ch",digi:"on",lvl:1}];
+const LANGS={ch:"Züritüütsch",de:"Hochdeutsch",en:"English",fr:"Français"};
 const LVL={1:"Halbi",2:"Viertel",3:"5 Min",4:"1 Min"};
 
 /* runs inside the app frame */
@@ -79,7 +79,7 @@ function audit(){
       if(b.scrollWidth>b.clientWidth+1) issues.add(`${g} "${t}" text cut off`);
       if(r.bottom>vh+1||r.right>vw+1) issues.add(`${name}: ${g} "${t}" off screen`);
       if(["tabs","controls","action"].includes(g)&&lines(b)>1) issues.add(`${g} "${t}" wraps`);
-      if(g==="answers"&&lines(b)>2) issues.add(`answer "${t}" needs 3 lines`);
+      if(g==="answers"&&lines(b)>(b.classList.contains("xlong")?3:2)) issues.add(`answer "${t}" needs ${lines(b)} lines`); // compact long answers may use 3
     }
   }
   for(const id of ["settings","langDlg","album"]){
@@ -87,7 +87,9 @@ function audit(){
     else if(id==="langDlg"){ $("settings").showModal(); $("langPick").click(); }
     else $("settings").showModal();
     const d=$(id);
-    if(d.scrollHeight>d.clientHeight+1) issues.add(`${id} dialog needs scrolling (${d.scrollHeight}>${d.clientHeight}px)`);
+    // the language list is meant to scroll as languages are added; there, the header with the close button must stay visible
+    if(id==="langDlg"){ d.scrollTop=d.scrollHeight; const hb=d.querySelector(".sheet-head .btn").getBoundingClientRect(), dr=d.getBoundingClientRect(); if(hb.top<dr.top-1||hb.bottom>dr.bottom+1) issues.add("language list: close button scrolls away"); d.scrollTop=0; }
+    else if(d.scrollHeight>d.clientHeight+1) issues.add(`${id} dialog needs scrolling (${d.scrollHeight}>${d.clientHeight}px)`);
     for(const b of d.querySelectorAll("button")){
       const r=b.getBoundingClientRect(), t=b.textContent.trim().slice(0,16);
       if(r.height<44) issues.add(`${id} "${t}" only ${Math.round(r.height)}px tall`);
