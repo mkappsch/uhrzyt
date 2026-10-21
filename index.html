@@ -420,13 +420,17 @@ function wedgePath(min){
 function setAngle(cur,next){ // shortest rotation, keeps animation smooth across 12
   let d=((next-cur)%360+540)%360-180; return cur+d;
 }
-function draw(){
-  mAngle=setAngle(mAngle,m*6);
-  hAngle=setAngle(hAngle,((h%12)+m/60)*30);
+/* put the hands at any position: mm minutes on the minute hand, hh hours on the hour hand (both may be fractional) */
+function pose(mm,hh){
+  mAngle=setAngle(mAngle,mm*6);
+  hAngle=setAngle(hAngle,hh*30);
   $("gm").style.transform=`rotate(${mAngle}deg)`;
   $("gh").style.transform=`rotate(${hAngle}deg)`;
   $("gm").style.transformOrigin=$("gh").style.transformOrigin="150px 150px";
-  $("wedge").setAttribute("d",wedgePath(m));
+  $("wedge").setAttribute("d",wedgePath((mm%60+60)%60));
+}
+function draw(){
+  pose(m,(h%12)+m/60);
   if(mode==="lern"){
     if(practice.h!==h||practice.m!==m){practice={h,m};saveState();}
     const p=phrase(h,m);
@@ -554,7 +558,11 @@ function applyLang(){
   if(!$("tip").hidden&&tipKind) $("tip").textContent=t[tipKind];
   labelSteps(); setSound(soundOn);
 }
-function step(dm){ let t=h*60+m+dm; t=((t%720)+720)%720; h=Math.floor(t/60)||12; m=t%60; draw(); }
+function step(dm){
+  // turn the hands the way the button says (a half turn would otherwise go backwards)
+  mAngle+=dm*6; hAngle+=dm/2;
+  let t=h*60+m+dm; t=((t%720)+720)%720; h=Math.floor(t/60)||12; m=t%60; draw();
+}
 $("mp").onclick=()=>step(gran()); $("mm").onclick=()=>step(-gran());
 $("hp").onclick=()=>step(60); $("hm").onclick=()=>step(-60);
 $("go").onclick=()=>{ if(locked) return; if(h%12===target.h%12&&m===target.m){locked=true;win();} else lose(); };
@@ -585,7 +593,7 @@ document.querySelectorAll(".levels button").forEach(b=>b.onclick=()=>{
 });
 
 /* dragging */
-const svg=$("clock"); let drag=null, acc=0, lastA=0;
+const svg=$("clock"); let drag=null, acc=0, lastA=0, acc0=0, start=0;
 function pt(e){const q=new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM().inverse());return{x:q.x-150,y:q.y-150}}
 const angOf=p=>(Math.atan2(p.x,-p.y)*180/Math.PI+360)%360;
 const angDiff=(a,b)=>Math.abs(((a-b)%360+540)%360-180);
@@ -601,22 +609,34 @@ svg.addEventListener("pointerdown",e=>{
   if(drag==="m"){ // tap sets the minute directly, without touching the hour
     const nm=Math.round(a/6/gran())*gran()%60; if(nm!==m){m=nm;draw();}
     acc=(h%12)*60+m+((a/6-m)%60+90)%60-30; lastA=a; // finger position in minutes, followed as it turns
+    start=(h%12)*60+m; acc0=acc;
+    pose(acc,acc/60);
   } else move(e);
 });
 function move(e){
   if(!drag) return;
   const a=angOf(pt(e)), g=gran();
+  // the hands follow the finger smoothly; the time itself is the nearest allowed step (shown live in the phrase)
   if(drag==="m"){
     // follow the finger's actual turning, so passing 12 carries the hour forwards or back
     acc+=(((a-lastA)%360+540)%360-180)/6; lastA=a;
-    const t=((Math.round(acc/g)*g)%720+720)%720, nh=Math.floor(t/60)||12, nm=t%60;
+    // any real move goes at least one stop that way; past one stop, the nearest stop wins
+    const moved=acc-acc0;
+    let t=Math.abs(moved)<=g*.2 ? start : Math.abs(moved)<=g ? start+Math.sign(moved)*g : Math.round(acc/g)*g;
+    t=(t%720+720)%720; const nh=Math.floor(t/60)||12, nm=t%60;
     if(nh!==h||nm!==m){h=nh;m=nm;draw();}
+    pose(acc,acc/60);
   } else {
     const nh=Math.round((a-m/2)/30+12)%12||12; if(nh!==h){h=nh;draw();}
+    pose(m,a/30);
   }
 }
 svg.addEventListener("pointermove",move);
-const end=()=>{if(drag)lastDragEnd=Date.now();drag=null;$("hands").classList.remove("dragging");$("gh").classList.remove("active");$("gm").classList.remove("active")};
+const end=()=>{
+  const was=drag; if(was)lastDragEnd=Date.now(); drag=null;
+  $("hands").classList.remove("dragging");$("gh").classList.remove("active");$("gm").classList.remove("active");
+  if(was) requestAnimationFrame(draw); // let go: the hands glide to the time they stand for
+};
 svg.addEventListener("pointerup",end); svg.addEventListener("pointercancel",end);
 
 document.querySelectorAll(".levels button").forEach(x=>x.setAttribute("aria-pressed",+x.dataset.lvl===lvl));
