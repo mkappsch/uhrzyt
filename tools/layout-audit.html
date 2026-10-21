@@ -44,10 +44,16 @@ td ul{margin:0;padding-left:18px}
 <script>
 const SIZES=[[320,640],[360,640],[360,740],[390,844],[412,915],[568,320],[640,360],[740,360],[780,330],[915,412],
   [768,1024],[820,1180],[1024,768],[1180,820],[1280,720],[1440,900],[1920,1080],[900,1000],[700,560]];
-// all languages, both task kinds (spoken / 24 h) and the shortest and longest phrases (levels 1 and 4)
-const RUNS=[{lang:"ch",digi:"off",lvl:4},{lang:"de",digi:"on",lvl:4},{lang:"en",digi:"off",lvl:4},{lang:"fr",digi:"on",lvl:4},{lang:"ch",digi:"on",lvl:1}];
-const LANGS={ch:"Züritüütsch",de:"Hochdeutsch",en:"English",fr:"Français"};
 const LVL={1:"Halbi",2:"Viertel",3:"5 Min",4:"1 Min"};
+let RUNS=[], LANGS={};
+/* the languages come from the app itself (every file in lang/ it loads): each at the longest phrases (level 4),
+   alternating spoken and 24 h tasks, plus the first language at the shortest phrases (level 1) */
+async function planRuns(){
+  const f=await load(400,800), reg=f.contentWindow.Uhrzyt.langs; f.remove();
+  LANGS=Object.fromEntries(Object.entries(reg).map(([k,l])=>[k,(l.name||k).replace(/&shy;|­/g,"")]));
+  const codes=Object.keys(reg);
+  RUNS=codes.map((k,i)=>({lang:k,digi:i%2?"on":"off",lvl:4})).concat([{lang:codes[0],digi:"on",lvl:1}]);
+}
 
 /* runs inside the app frame */
 function audit(){
@@ -127,6 +133,7 @@ async function runAll(){
   const results=[];
   try{
     await document.fonts.ready;
+    await planRuns();
     for(const run of RUNS) for(const [w,h] of SIZES){
       localStorage.setItem("uhr-lang",run.lang); localStorage.setItem("uhr-digi",run.digi); localStorage.setItem("uhr-tip","1");
       localStorage.setItem("uhr-score","1"); // stay away from sticker milestones

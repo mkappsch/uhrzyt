@@ -1,0 +1,255 @@
+/* Uhrzyt lerne — styles */
+:root{color-scheme:light}
+body{margin:0;font:14px system-ui,sans-serif}
+img{max-width:100%}
+html,body{overscroll-behavior:none}
+
+/* Layout: the app always fills the screen. Two arrangements only:
+   stacked (upright and squarish screens) and side by side (wide screens).
+   Every size comes from the tokens below, so controls look the same everywhere and scale smoothly. */
+:root{
+  --bg:#eef4f1; --paper:#ffffff; --ink:#1f2a33; --muted:#5f6f78;
+  --hour:#2a6fdb; --minute:#f2762e; --good:#2f9e5b; --bad:#d64545;
+  --face:#fffdf7; --rim:#1f2a33; --wedge:rgba(242,118,46,.16); --line:#d6e0dc;
+  --display:"Baloo 2","Trebuchet MS",system-ui,sans-serif;
+  --body:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+  /* spacing and control sizes */
+  --pad:clamp(8px,2vmin,24px);
+  --gap:clamp(6px,1.5vmin,14px);
+  --tap:clamp(48px,7vmin,64px);     /* action buttons: ±, Prüefe, Nöchschti, answers */
+  --tab:clamp(44px,6vmin,56px);     /* mode tabs, ⚙, read aloud */
+  --radius:clamp(12px,1.8vmin,18px);
+  --vh:100vh;
+}
+@supports (height:100dvh){:root{--vh:100dvh}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141b20; --paper:#1d262d; --ink:#eef2f4; --muted:#9fb0b9;
+  --hour:#6aa2ff; --minute:#ff9a5c; --good:#4cc47e; --bad:#ff7070;
+  --face:#232e36; --rim:#e6ecef; --wedge:rgba(255,154,92,.2); --line:#33424c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141b20; --paper:#1d262d; --ink:#eef2f4; --muted:#9fb0b9;
+  --hour:#6aa2ff; --minute:#ff9a5c; --good:#4cc47e; --bad:#ff7070;
+  --face:#232e36; --rim:#e6ecef; --wedge:rgba(255,154,92,.2); --line:#33424c; color-scheme:dark}
+
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:1rem;-webkit-tap-highlight-color:transparent}
+button{touch-action:manipulation;font:inherit}
+[hidden]{display:none!important}
+button:focus-visible{outline:3px solid var(--hour);outline-offset:2px}
+
+/* ---------- page grid ---------- */
+.wrap{box-sizing:border-box;min-height:var(--vh);max-width:720px;margin:0 auto;
+  padding:max(var(--pad),env(safe-area-inset-top,0px)) max(var(--pad),env(safe-area-inset-right,0px)) max(var(--pad),env(safe-area-inset-bottom,0px)) max(var(--pad),env(safe-area-inset-left,0px));
+  display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(200px,1fr) auto;
+  grid-template-areas:"top" "clock" "panel";gap:var(--gap)}
+.main{display:contents}
+.top{grid-area:top;container-type:inline-size;display:flex;flex-direction:column;gap:var(--gap)}
+.clockbox{grid-area:clock;position:relative;min-width:0}
+.clockbox svg{position:absolute;inset:0}
+.panel{grid-area:panel;container-type:inline-size;display:flex;flex-direction:column;gap:var(--gap);min-width:0}
+
+/* wide screens: clock on the left, as tall as the screen allows; everything else on the right */
+@media (min-aspect-ratio:6/5){
+  /* clock as tall as the screen allows, but the right column always keeps at least 320px */
+  .wrap{--clock:min(calc(var(--vh) - 2*var(--pad)),52vw,calc(100vw - 2*var(--pad) - 3vw - 320px),720px);max-width:1320px;
+    grid-template-columns:var(--clock) minmax(0,1fr);grid-template-rows:auto auto;
+    grid-template-areas:"clock top" "clock panel";column-gap:clamp(12px,3vw,48px);align-content:center}
+  .clockbox{align-self:center;width:var(--clock);height:var(--clock)}
+  .panel{align-self:start}
+}
+
+/* ---------- header and mode tabs ---------- */
+header{position:relative;display:flex;align-items:center;justify-content:space-between;gap:var(--gap)}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.3rem,7cqi,2.4rem);margin:0;line-height:1;flex:0 1 auto;min-width:0;text-wrap:balance} /* wraps to two lines when the header is tight */
+h1 span{color:var(--minute)}
+.hd{display:flex;align-items:center;gap:var(--gap)}
+.score{cursor:pointer;display:inline-flex;align-items:center;min-height:var(--tab);box-sizing:border-box;font-family:var(--display);font-weight:800;font-size:clamp(1rem,4.5cqi,1.35rem);color:var(--minute);font-variant-numeric:tabular-nums;background:var(--paper);border:2px solid var(--line);border-radius:999px;padding:2px 14px;line-height:1.6;white-space:nowrap}
+/* settings button shows the current level, so people see there is something to change */
+.gear{border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;min-width:var(--tab);height:var(--tab);
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;padding:0 12px 0 10px;
+  font-weight:800;font-size:clamp(.85rem,3.8cqi,1.1rem);white-space:nowrap}
+.gear svg{width:calc(var(--tab) * .5);height:calc(var(--tab) * .5);fill:var(--muted);flex:none}
+.gear.new{border-color:var(--minute)}
+@media (prefers-reduced-motion:no-preference){.gear.new{animation:nudge 2.4s ease-in-out 1s infinite}}
+@keyframes nudge{0%,70%,100%{box-shadow:0 0 0 0 rgba(242,118,46,0)}80%{box-shadow:0 0 0 6px rgba(242,118,46,.35)}}
+.tip{position:absolute;right:0;top:calc(100% + 10px);z-index:10;max-width:min(280px,90cqi);background:var(--ink);color:var(--bg);
+  border:0;border-radius:14px;padding:10px 36px 10px 14px;font-weight:700;font-size:.95rem;line-height:1.3;text-align:left;cursor:pointer;
+  box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.tip::before{content:"";position:absolute;right:22px;top:-7px;border:8px solid transparent;border-top:0;border-bottom-color:var(--ink)}
+.tip::after{content:"✕";position:absolute;right:12px;top:9px;opacity:.6}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--paper);padding:4px;border-radius:calc(var(--radius) + 4px);border:2px solid var(--line)}
+.tabs button{font-weight:800;font-size:clamp(.85rem,4.4cqi,1.2rem);white-space:nowrap;border:0;border-radius:var(--radius);padding:0 4px;min-height:var(--tab);background:transparent;color:var(--muted);cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+
+/* ---------- clock face ---------- */
+svg{width:100%;height:100%;display:block;touch-action:none;user-select:none}
+.face{fill:var(--face);stroke:var(--rim);stroke-width:6}
+.tick{stroke:var(--rim)}
+.num{font-family:var(--display);font-weight:800;font-size:28px;fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.mnum{font-family:var(--body);font-weight:800;font-size:12px;fill:var(--minute);text-anchor:middle;dominant-baseline:central}
+.side{font-family:var(--display);font-weight:800;font-size:22px;fill:var(--muted);text-anchor:middle;opacity:.55}
+.hand-h{stroke:var(--hour);stroke-width:13;stroke-linecap:round}
+.hand-m{stroke:var(--minute);stroke-width:8;stroke-linecap:round}
+.knob{fill:var(--rim)}
+.grip-h{fill:var(--hour)} .grip-m{fill:var(--minute)}
+.hit{stroke:transparent;stroke-linecap:round}
+#gh.active .hand-h{stroke-width:17} #gm.active .hand-m{stroke-width:12}
+.wedge{fill:var(--wedge)}
+/* the hour number the phrase talks about */
+.glow{fill:var(--hour);opacity:0;transition:opacity .3s}
+.glow.on{opacity:.2}
+.num.lit{fill:var(--hour)}
+/* the hand that is off after a miss */
+#gh.nudge .hand-h{stroke-width:19} #gm.nudge .hand-m{stroke-width:14}
+@media (prefers-reduced-motion:no-preference){
+  #gh.nudge .hand-h{animation:nudgeH .55s ease-in-out 3} #gm.nudge .hand-m{animation:nudgeM .55s ease-in-out 3}
+}
+@keyframes nudgeH{0%,100%{stroke-width:13}50%{stroke-width:23}}
+@keyframes nudgeM{0%,100%{stroke-width:8}50%{stroke-width:16}}
+
+/* ---------- phrase box: same design everywhere; round read-aloud button on the right ---------- */
+.say{position:relative;background:var(--paper);border:2px solid var(--line);border-radius:calc(var(--radius) + 4px);
+  padding:var(--gap) calc(var(--tap) + 2*var(--gap)) var(--gap) var(--gap);min-height:calc(var(--tap) + 2*var(--gap));box-sizing:border-box;
+  text-align:center;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.say .label{font-size:clamp(.7rem,2.6cqi,.85rem);font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.say.ask .label{font-family:var(--display);font-size:clamp(1.2rem,6cqi,2rem);letter-spacing:0;text-transform:none;color:var(--ink)}
+.say.ask .ch{display:none}
+/* a miss: the label above the phrase says what is off */
+.say.warn .label{font-family:var(--display);font-size:clamp(.95rem,4cqi,1.3rem);letter-spacing:0;text-transform:none;color:var(--bad);line-height:1.1}
+@media (max-height:500px){.say.warn .label{font-size:.95rem}}
+.say.warn.shake .label{animation:shake .4s}
+/* the phrase box keeps one height while the time changes, so the clock never resizes under a finger:
+   the phrase stays on one line (shrunk to fit) and the lines underneath are fixed */
+.say .ch{font-family:var(--display);font-weight:800;font-size:clamp(1.4rem,7.5cqi,2.6rem);line-height:1.1;white-space:nowrap}
+.say .ch .m{color:var(--minute)} .say .ch .h{color:var(--hour)}
+.say .sub{font-size:clamp(.85rem,3.6cqi,1.1rem);display:flex;flex-direction:column;align-items:center}
+.say .sub>span{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.say .de{color:var(--muted);font-weight:700}
+.say .de:not(:empty)::before{content:attr(data-pre)}
+/* short screens: the line under the phrase stays one line */
+@media (max-height:500px){ /* short screens: one line underneath */
+  .say .sub{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .say .sub>span{display:inline} .say .de::before{content:none} .say .de:not(:empty)+.dig:not(:empty)::before{content:" · "}}
+.say .dig{font-family:var(--display);font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.speak{position:absolute;right:var(--gap);top:50%;transform:translateY(-50%)}
+.speak .play{border:0;border-radius:999px;width:var(--tap);height:var(--tap);padding:0;background:var(--hour);color:#fff;cursor:pointer;display:grid;place-items:center;font-size:0}
+.speak .play svg{width:60%;height:60%;fill:currentColor}
+
+/* ---------- buttons, answers, answer row ---------- */
+.btn{font-weight:800;font-size:clamp(1rem,4.2cqi,1.3rem);line-height:1.15;border:2px solid var(--line);border-radius:var(--radius);padding:4px 8px;min-height:var(--tap);min-width:0;cursor:pointer;background:var(--paper);color:var(--ink)}
+.btn.primary{background:var(--minute);border-color:var(--minute);color:#1f1205}
+.btn.h{color:var(--hour)} .btn.m{color:var(--minute)}
+.row{display:flex;gap:var(--gap)}
+.row .btn{flex:1}
+#controls{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:var(--gap)}
+#controls .btn{padding:4px 2px}
+.btn.soft{background:transparent;border-color:var(--hour);color:var(--hour)}
+.opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gap)}
+.opts .btn{font-family:var(--display);font-size:clamp(.95rem,4cqi,1.3rem);padding:4px 6px;text-wrap:balance;min-height:max(var(--tap),calc(2.3em + 12px))} /* room for two lines, so the row never jumps */
+.opts .btn.long{font-size:clamp(.85rem,3.5cqi,1.15rem)}
+@container (max-width:360px){.opts .btn{font-size:.88rem;padding:2px 4px}.opts .btn.long{font-size:.8rem}}
+/* very long answers («sept heures moins vingt et une»): three tight lines inside the normal button height */
+.opts .btn.xlong,.opts .btn.long.xlong{font-size:.8rem;line-height:1.05;padding:2px 3px}
+.opts .btn.right{background:var(--good);border-color:var(--good);color:#06210f}
+.opts .btn.wrong{border-color:var(--bad);color:var(--bad)}
+.dock{display:flex;align-items:center;gap:var(--gap)}
+.dock .feedback{flex:1 1 0;min-width:0}
+.dock .row{flex:1.3 1 0;min-width:0}
+.feedback{text-align:center;font-family:var(--display);font-weight:800;font-size:clamp(1.05rem,4.6cqi,1.5rem);line-height:1.1}
+.feedback:empty{display:none}
+.feedback.ok{color:var(--good)} .feedback.no{color:var(--bad)}
+.hint{font-size:clamp(.8rem,3.2cqi,.95rem);color:var(--muted);text-align:center;margin:0;max-width:60ch;margin-inline:auto}
+.hint b.h{color:var(--hour)} .hint b.m{color:var(--minute)}
+body:not([data-mode="lern"]) .hint{display:none}
+@media (max-height:440px){.hint{display:none}}
+
+/* ---------- settings dialog ---------- */
+dialog#settings{border:0;padding:0;background:transparent;color:var(--ink);width:min(440px,calc(100vw - 32px));max-height:calc(var(--vh) - 24px);overflow:auto}
+dialog#settings::backdrop{background:rgba(10,15,20,.55)}
+.sheet{background:var(--paper);border:2px solid var(--line);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:16px;font-family:var(--body)}
+.sheet h2{font-family:var(--display);font-weight:800;margin:0;font-size:1.6rem;line-height:1}
+.set-row{display:flex;flex-direction:column;gap:8px}
+.set-inline{flex-direction:row;align-items:center;justify-content:space-between;gap:12px}
+.set-label{font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.levels{display:grid;grid-template-columns:1fr;gap:6px}
+.levels button{font-weight:800;border:2px solid var(--line);border-radius:12px;min-height:50px;font-size:1.05rem;display:flex;justify-content:space-between;align-items:center;padding:8px 14px;text-align:left;background:transparent;color:var(--muted);cursor:pointer}
+.levels button[aria-pressed="true"]{border-color:var(--minute);color:var(--ink)}
+/* languages: round flag pictures (same on every device), one row in the settings, a list to choose from */
+.flag{display:inline-block;width:1.6em;height:1.6em;border-radius:50%;overflow:hidden;flex:none;box-shadow:0 0 0 1.5px var(--line);vertical-align:middle}
+.flag svg{width:100%;height:100%;display:block}
+.gear .flag{width:calc(var(--tab) * .42);height:calc(var(--tab) * .42)}
+.pick{display:flex;align-items:center;gap:10px;width:100%;min-height:50px;padding:8px 14px;border:2px solid var(--line);border-radius:12px;background:transparent;color:var(--ink);font-weight:800;font-size:1.05rem;cursor:pointer;text-align:left}
+.pick .chev,.langlist .ck{margin-left:auto;font-size:1.3rem;line-height:1}
+.pick .chev{color:var(--muted)}
+.langlist{display:flex;flex-direction:column;gap:6px}
+.langlist button{display:flex;align-items:center;gap:12px;min-height:52px;padding:8px 14px;border:2px solid var(--line);border-radius:12px;background:transparent;color:var(--ink);font-weight:800;font-size:1.05rem;cursor:pointer;text-align:left}
+.langlist button[aria-checked="true"]{border-color:var(--minute)}
+.langlist .ck{color:var(--minute);visibility:hidden}
+.lgroup{display:flex;align-items:center;gap:12px;padding:4px 4px 0;font-weight:800;font-size:.9rem;color:var(--muted)}
+.langlist button.dialect{margin-left:clamp(16px,6%,28px)}
+/* the language list grows with every language: it scrolls, with its header kept in view */
+#langDlg .sheet-head{position:sticky;top:-18px;margin:-18px -18px 0;padding:18px 18px 8px;background:var(--paper);z-index:1}
+.langlist button[aria-checked="true"] .ck{visibility:visible}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.sheet-head .btn{flex:none;padding:4px 20px}
+.levels small{font-weight:700;color:var(--muted);font-size:.85rem}
+.toggle{font-weight:800;border:2px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;min-height:44px;padding:6px 16px;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.toggle svg{width:22px;height:22px;fill:currentColor}
+.toggle[aria-pressed="true"]{border-color:var(--good);color:var(--good)}
+.toggles{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.toggles .toggle{justify-content:center;border-radius:12px;padding:6px 8px}
+.toggle .st{font-weight:700;opacity:.85}
+.toggle .st::before{content:"· "}
+/* sticker collection */
+.alb-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.alb-stars{font-family:var(--display);font-weight:800;font-size:2rem;color:var(--minute);line-height:1}
+.alb-streak{font-weight:800;color:var(--muted)}
+.badges{display:grid;grid-template-columns:repeat(auto-fit,minmax(60px,1fr));gap:8px}
+.badge{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border:2px solid var(--line);border-radius:14px}
+.badge .em{font-size:2rem;line-height:1.1;filter:grayscale(1);opacity:.3}
+.badge .bn{font-size:.8rem;font-weight:800;color:var(--muted)}
+.badge.got{border-color:var(--minute)} .badge.got .em{filter:none;opacity:1}
+.badge.fresh{animation:pop .8s cubic-bezier(.3,1.6,.5,1) 2}
+.alb-next{margin:0;color:var(--muted);font-weight:700;text-align:center}
+.alb-sec{margin:0;font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.medals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.lvm{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 2px;border:2px solid var(--line);border-radius:12px}
+.lvm.cur{border-color:var(--hour)}
+.lvm .ln{font-weight:800;font-size:.8rem}
+.lvm .ls{font-weight:800;font-size:.8rem;color:var(--minute)}
+.lvm .mm{font-size:1.05rem;white-space:nowrap}
+.lvm .mm i{font-style:normal;filter:grayscale(1);opacity:.25}
+.lvm .mm i.got{filter:none;opacity:1}
+.lvm .mm i.fresh{display:inline-block;animation:pop .8s cubic-bezier(.3,1.6,.5,1) 2}
+/* short screens (phone sideways): stickers in one row, levels in one row, so the collection fits without scrolling */
+@media (max-height:500px){
+  #album .sheet{gap:8px}
+  .alb-stars{font-size:1.4rem}
+  .badges{grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+  .badge{padding:4px 2px} .badge .em{font-size:1.4rem} .badge .bn{font-size:.7rem}
+  .lvm{display:grid;grid-template-columns:auto auto;justify-content:center;column-gap:4px;padding:4px 2px}
+  .lvm .mm{grid-column:1/-1;text-align:center}
+}
+dialog#album,dialog#langDlg{border:0;padding:0;background:transparent;color:var(--ink);width:min(440px,calc(100vw - 32px));max-height:calc(var(--vh) - 24px);overflow:auto}
+dialog#album::backdrop,dialog#langDlg::backdrop{background:rgba(10,15,20,.55)}
+.sheet .btn{min-height:48px}
+/* short screens (phone sideways): levels side by side so the whole sheet fits */
+@media (max-height:500px){
+  .sheet{padding:12px 14px;gap:10px} .sheet h2{font-size:1.3rem}
+  .set-row{display:grid;grid-template-columns:5.2em minmax(0,1fr);align-items:center;gap:8px}
+  .levels{grid-template-columns:repeat(4,1fr)} .levels small{display:none}
+  .levels button{min-height:44px;justify-content:center;text-align:center;padding:4px 6px;font-size:.95rem}
+  .pick{min-height:44px;padding:4px 12px;font-size:.95rem} .langlist button{min-height:44px;padding:4px 12px}
+  #langDlg .sheet-head{top:-12px;margin:-12px -14px 0;padding:12px 14px 6px}
+}
+
+/* ---------- motion ---------- */
+.score.pop{animation:pop .6s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{0%{transform:scale(1)}35%{transform:scale(1.35) rotate(-6deg)}100%{transform:scale(1)}}
+.fb-star{display:inline-block}
+.feedback.ok .fb-star{animation:spin .8s cubic-bezier(.3,1.4,.5,1)}
+@keyframes spin{0%{transform:scale(0) rotate(-180deg)}70%{transform:scale(1.4) rotate(15deg)}100%{transform:scale(1) rotate(0)}}
+.feedback.no{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.burst{position:fixed;z-index:20;pointer-events:none;font-size:34px;line-height:1;color:#ffc531;text-shadow:0 0 10px rgba(255,197,49,.7),0 1px 0 rgba(0,0,0,.3);left:0;top:0;will-change:transform,opacity}
+@media (prefers-reduced-motion:reduce){.score.pop,.feedback.ok .fb-star,.feedback.no{animation:none}.burst{display:none}}
+@media (prefers-reduced-motion:no-preference){.hands g{transition:transform .25s ease}.hands.tick g{transition:transform .16s cubic-bezier(.3,1.6,.6,1)}.hands.dragging g{transition:none}}
