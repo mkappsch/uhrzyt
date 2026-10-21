@@ -71,13 +71,24 @@ button:focus-visible{outline:3px solid var(--hour);outline-offset:2px}
 }
 
 /* ---------- header and mode tabs ---------- */
-header{display:flex;align-items:center;justify-content:space-between;gap:var(--gap)}
+header{position:relative;display:flex;align-items:center;justify-content:space-between;gap:var(--gap)}
 h1{font-family:var(--display);font-weight:800;font-size:clamp(1.4rem,7cqi,2.4rem);margin:0;line-height:1;white-space:nowrap}
 h1 span{color:var(--minute)}
 .hd{display:flex;align-items:center;gap:var(--gap)}
 .score{display:inline-block;font-family:var(--display);font-weight:800;font-size:clamp(1rem,4.5cqi,1.35rem);color:var(--minute);font-variant-numeric:tabular-nums;background:var(--paper);border:2px solid var(--line);border-radius:999px;padding:2px 14px;line-height:1.6}
-.gear{border:2px solid var(--line);background:var(--paper);color:var(--muted);border-radius:999px;width:var(--tab);height:var(--tab);display:grid;place-items:center;cursor:pointer;padding:0}
-.gear svg{width:55%;height:55%;fill:currentColor}
+/* settings button shows the current level, so people see there is something to change */
+.gear{border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;min-width:var(--tab);height:var(--tab);
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;padding:0 12px 0 10px;
+  font-weight:800;font-size:clamp(.85rem,3.8cqi,1.1rem);white-space:nowrap}
+.gear svg{width:calc(var(--tab) * .5);height:calc(var(--tab) * .5);fill:var(--muted);flex:none}
+.gear.new{border-color:var(--minute)}
+@media (prefers-reduced-motion:no-preference){.gear.new{animation:nudge 2.4s ease-in-out 1s infinite}}
+@keyframes nudge{0%,70%,100%{box-shadow:0 0 0 0 rgba(242,118,46,0)}80%{box-shadow:0 0 0 6px rgba(242,118,46,.35)}}
+.tip{position:absolute;right:0;top:calc(100% + 10px);z-index:10;max-width:min(280px,90cqi);background:var(--ink);color:var(--bg);
+  border:0;border-radius:14px;padding:10px 36px 10px 14px;font-weight:700;font-size:.95rem;line-height:1.3;text-align:left;cursor:pointer;
+  box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.tip::before{content:"";position:absolute;right:22px;top:-7px;border:8px solid transparent;border-top:0;border-bottom-color:var(--ink)}
+.tip::after{content:"✕";position:absolute;right:12px;top:9px;opacity:.6}
 .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--paper);padding:4px;border-radius:calc(var(--radius) + 4px);border:2px solid var(--line)}
 .tabs button{font-weight:800;font-size:clamp(.85rem,4.4cqi,1.2rem);white-space:nowrap;border:0;border-radius:var(--radius);padding:0 4px;min-height:var(--tab);background:transparent;color:var(--muted);cursor:pointer}
 .tabs button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
@@ -174,8 +185,9 @@ dialog#settings::backdrop{background:rgba(10,15,20,.55)}
     <h1>Uhrzyt <span>lerne</span></h1>
     <div class="hd">
       <div class="score" id="score" aria-live="polite">★ 0</div>
-      <button class="gear" id="gear" aria-label="Iistellige" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6a.5.5 0 0 0 .1-.6l-2-3.5a.5.5 0 0 0-.6-.2l-2.5 1a7.3 7.3 0 0 0-1.7-1l-.4-2.6a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 0-.5.4l-.4 2.7a7.3 7.3 0 0 0-1.7 1l-2.5-1a.5.5 0 0 0-.6.2l-2 3.5a.5.5 0 0 0 .1.6L4.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6a.5.5 0 0 0-.1.6l2 3.5c.1.2.4.3.6.2l2.5-1c.5.4 1.1.7 1.7 1l.4 2.6c0 .3.2.5.5.5h4c.3 0 .5-.2.5-.4l.4-2.7c.6-.3 1.2-.6 1.7-1l2.5 1c.2.1.5 0 .6-.2l2-3.5a.5.5 0 0 0-.1-.6L19.4 13zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg></button>
+      <button class="gear" id="gear" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6a.5.5 0 0 0 .1-.6l-2-3.5a.5.5 0 0 0-.6-.2l-2.5 1a7.3 7.3 0 0 0-1.7-1l-.4-2.6a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 0-.5.4l-.4 2.7a7.3 7.3 0 0 0-1.7 1l-2.5-1a.5.5 0 0 0-.6.2l-2 3.5a.5.5 0 0 0 .1.6L4.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6a.5.5 0 0 0-.1.6l2 3.5c.1.2.4.3.6.2l2.5-1c.5.4 1.1.7 1.7 1l.4 2.6c0 .3.2.5.5.5h4c.3 0 .5-.2.5-.4l.4-2.7c.6-.3 1.2-.6 1.7-1l2.5 1c.2.1.5 0 .6-.2l2-3.5a.5.5 0 0 0-.1-.6L19.4 13zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg><span id="lvlChip">5 Min</span></button>
     </div>
+    <button class="tip" id="tip" hidden>Do chasch d'Stufe und d'Tön iistelle.</button>
   </header>
 
   <nav class="tabs" role="group" aria-label="Modus">
@@ -441,7 +453,7 @@ function newTask(){
   syncDock();
 }
 function win(){
-  $("say").classList.remove("ask");
+  misses=0; $("say").classList.remove("ask");
   const p=phrase(target.h,target.m);
   $("fb").innerHTML=["Super!","Bravo!","Genau so!","Toll gmacht!"][Math.floor(Math.random()*4)]+' <span class="fb-star">★</span>';
   $("fb").className="feedback"; void $("fb").offsetWidth; $("fb").className="feedback ok";
@@ -451,6 +463,8 @@ function win(){
   $("check").hidden=true; $("nextRow").hidden=false; syncDock(); starBurst();
 }
 function lose(){
+  // three misses in a row: point at the settings once per level and session, if an easier level exists
+  if(++misses>=3&&lvl>1&&!offered.has(lvl)){ offered.add(lvl); showTip("Z'schwär? Do chasch e liechteri Stufe wähle."); }
   sfx(false); $("fb").textContent="Fasch! Probier nomal.";
   $("fb").className="feedback"; void $("fb").offsetWidth; $("fb").className="feedback no"; syncDock();
 }
@@ -468,7 +482,9 @@ function setMode(md){
 /* controls */
 const gran=()=>({1:30,2:15,3:5})[lvl];
 function snapM(){ const g=gran(); if(m%g){ m=Math.round(m/g)*g; if(m===60){m=0;h=h%12+1} draw(); } }
+const LVL_SHORT={1:"Halbi",2:"Viertel",3:"5 Min"}, LVL_LONG={1:"Ganzi & Halbi",2:"+ Viertel",3:"Alli 5 Minute"};
 function labelSteps(){ const g=gran(); $("mp").textContent="+ "+g; $("mm").textContent="− "+g;
+  $("lvlChip").textContent=LVL_SHORT[lvl]; $("gear").setAttribute("aria-label","Iistellige – Stufe: "+LVL_LONG[lvl]);
   $("mp").setAttribute("aria-label",g+" Minute vorwärts"); $("mm").setAttribute("aria-label",g+" Minute zrugg"); }
 function step(dm){ let t=h*60+m+dm; t=((t%720)+720)%720; h=Math.floor(t/60)||12; m=t%60; draw(); }
 $("mp").onclick=()=>step(gran()); $("mm").onclick=()=>step(-gran());
@@ -478,7 +494,14 @@ $("next").onclick=newTask;
 $("play").onclick=speak;
 $("mute").onclick=()=>setSound(!soundOn);
 const dlg=$("settings");
-$("gear").onclick=()=>{ hush(); if(dlg.showModal) dlg.showModal(); else dlg.setAttribute("open",""); };
+/* first launch: point at the settings once; gone for good after the tip or the settings are opened */
+let tipSeen=true; try{tipSeen=!!localStorage.getItem("uhr-tip")}catch(e){}
+let misses=0; const offered=new Set();
+function showTip(text){ if(text) $("tip").textContent=text; $("tip").hidden=false; $("gear").classList.add("new"); }
+function hideTip(){ $("tip").hidden=true; $("gear").classList.remove("new"); try{localStorage.setItem("uhr-tip","1")}catch(e){} }
+if(!tipSeen) showTip();
+$("tip").onclick=hideTip;
+$("gear").onclick=()=>{ hush(); hideTip(); if(dlg.showModal) dlg.showModal(); else dlg.setAttribute("open",""); };
 dlg.addEventListener("click",e=>{ if(e.target===dlg) dlg.close(); }); // tap outside closes
 if(tts) speechSynthesis.onvoiceschanged=()=>{};
 document.addEventListener("visibilitychange",()=>{if(document.hidden)hush()});
@@ -486,7 +509,7 @@ window.addEventListener("pagehide",hush);
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
 document.querySelectorAll(".levels button").forEach(b=>b.onclick=()=>{
   lvl=+b.dataset.lvl; document.querySelectorAll(".levels button").forEach(x=>x.setAttribute("aria-pressed",x===b));
-  saveState(); labelSteps(); if(mode!=="lern") newTask(); else snapM();
+  misses=0; saveState(); labelSteps(); if(mode!=="lern") newTask(); else snapM();
 });
 
 /* dragging */
