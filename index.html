@@ -184,7 +184,7 @@ dialog#settings::backdrop{background:rgba(10,15,20,.55)}
 .levels{display:grid;grid-template-columns:1fr;gap:6px}
 .levels button,.langs button{font-weight:800;border:2px solid var(--line);border-radius:12px;min-height:50px;font-size:1.05rem;display:flex;justify-content:space-between;align-items:center;padding:8px 14px;text-align:left;background:transparent;color:var(--muted);cursor:pointer}
 .levels button[aria-pressed="true"],.langs button[aria-pressed="true"]{border-color:var(--minute);color:var(--ink)}
-.langs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.langs{display:grid;grid-template-columns:repeat(auto-fill,minmax(5.5em,1fr));gap:6px} /* wraps into rows as languages are added */
 @media (max-width:359px){.langs button{font-size:.85rem;padding:6px 2px}} /* very narrow phones */
 .langs button{justify-content:center;text-align:center;padding:6px 4px;hyphens:manual;line-height:1.15}
 .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -208,6 +208,25 @@ dialog#settings::backdrop{background:rgba(10,15,20,.55)}
 .badge.got{border-color:var(--minute)} .badge.got .em{filter:none;opacity:1}
 .badge.fresh{animation:pop .8s cubic-bezier(.3,1.6,.5,1) 2}
 .alb-next{margin:0;color:var(--muted);font-weight:700;text-align:center}
+.alb-sec{margin:0;font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.medals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.lvm{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 2px;border:2px solid var(--line);border-radius:12px}
+.lvm.cur{border-color:var(--hour)}
+.lvm .ln{font-weight:800;font-size:.8rem}
+.lvm .ls{font-weight:800;font-size:.8rem;color:var(--minute)}
+.lvm .mm{font-size:1.05rem;white-space:nowrap}
+.lvm .mm i{font-style:normal;filter:grayscale(1);opacity:.25}
+.lvm .mm i.got{filter:none;opacity:1}
+.lvm .mm i.fresh{display:inline-block;animation:pop .8s cubic-bezier(.3,1.6,.5,1) 2}
+/* short screens (phone sideways): stickers in one row, levels in one row, so the collection fits without scrolling */
+@media (max-height:500px){
+  #album .sheet{gap:8px}
+  .alb-stars{font-size:1.4rem}
+  .badges{grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+  .badge{padding:4px 2px} .badge .em{font-size:1.4rem} .badge .bn{font-size:.7rem}
+  .lvm{display:grid;grid-template-columns:auto auto;justify-content:center;column-gap:4px;padding:4px 2px}
+  .lvm .mm{grid-column:1/-1;text-align:center}
+}
 dialog#album{border:0;padding:0;background:transparent;color:var(--ink);width:min(440px,calc(100vw - 32px));max-height:calc(var(--vh) - 24px);overflow:auto}
 dialog#album::backdrop{background:rgba(10,15,20,.55)}
 .sheet .btn{min-height:48px}
@@ -309,11 +328,7 @@ dialog#album::backdrop{background:rgba(10,15,20,.55)}
     </div>
     <div class="set-row">
       <span class="set-label" id="langLabel">Sprooch</span>
-      <div class="langs" role="group" aria-labelledby="langLabel">
-        <button type="button" data-lang="ch" aria-pressed="true" lang="de-CH">Schwiizer&shy;dütsch</button>
-        <button type="button" data-lang="de" aria-pressed="false" lang="de">Hoch&shy;deutsch</button>
-        <button type="button" data-lang="en" aria-pressed="false" lang="en">English</button>
-      </div>
+      <div class="langs" id="langs" role="group" aria-labelledby="langLabel"></div>
     </div>
     <div class="set-row">
       <span class="set-label" id="lvLabel">Stufe</span>
@@ -342,6 +357,8 @@ dialog#album::backdrop{background:rgba(10,15,20,.55)}
     </div>
     <div class="alb-top"><span class="alb-stars" id="albStars">★ 0</span><span class="alb-streak" id="albStreak"></span></div>
     <div class="badges" id="badges"></div>
+    <p class="alb-sec" id="medLabel">Medaille pro Stufe</p>
+    <div class="medals" id="medals"></div>
     <p class="alb-next" id="albNext"></p>
   </form>
 </dialog>
@@ -366,7 +383,8 @@ const TXT={
     extras:"Extras",soundLong:"Tön bi richtig & falsch",digiLong:"Digitali Ziit mit 24 Stund",
     parts:{night:"znacht",morning:"am Morge",forenoon:"am Vormittag",noon:"am Mittag",afternoon:"am Namittag",evening:"am Abig"},
     album:"Dini Stärn",newBadge:n=>`🎉 ${n} Stärn!`,streak:n=>`🔥 ${n} ${n===1?"Tag":"Täg"} hinterenand`,
-    nextBadge:n=>`No ${n} Stärn bis zum nöchschte Sticker`,allBadges:"Alli Sticker gsammlet!"},
+    nextBadge:n=>`No ${n} Stärn bis zum nöchschte Sticker`,allBadges:"Alli Sticker gsammlet!",
+    medals:"Medaille pro Stufe",newMedal:(e,l)=>`${e} Medaille «${l}»!`},
   de:{doc:"Uhrzeit lernen",title:"Uhrzeit <span>lernen</span>",mode:"Modus",lern:"Üben",stell:"Uhr stellen",luege:"Wie spät?",
     say:"Man sagt",setTo:"Stell die Uhr auf",ask:"Wie spät ist es?",right:"Richtig",check:"Prüfen",next:"Nächste Aufgabe",
     miss:"Fast! Versuch es nochmal.",wins:["Super!","Bravo!","Genau so!","Toll gemacht!"],sub:"",
@@ -382,7 +400,8 @@ const TXT={
     extras:"Extras",soundLong:"Töne bei richtig & falsch",digiLong:"Digitale Zeit mit 24 Stunden",
     parts:{night:"in der Nacht",morning:"am Morgen",forenoon:"am Vormittag",noon:"am Mittag",afternoon:"am Nachmittag",evening:"am Abend"},
     album:"Deine Sterne",newBadge:n=>`🎉 ${n} Sterne!`,streak:n=>`🔥 ${n} ${n===1?"Tag":"Tage"} am Stück`,
-    nextBadge:n=>`Noch ${n} Sterne bis zum nächsten Sticker`,allBadges:"Alle Sticker gesammelt!"},
+    nextBadge:n=>`Noch ${n} Sterne bis zum nächsten Sticker`,allBadges:"Alle Sticker gesammelt!",
+    medals:"Medaillen pro Stufe",newMedal:(e,l)=>`${e} Medaille „${l}“!`},
   en:{doc:"Tell the Time",title:"Tell <span>the time</span>",mode:"Mode",lern:"Practise",stell:"Set clock",luege:"What time?",
     say:"We say",setTo:"Set the clock to",ask:"What time is it?",right:"Right",check:"Check",next:"Next",
     miss:"Almost! Try again.",wins:["Great!","Well done!","Exactly!","Brilliant!"],sub:"Schwiizerdütsch: ",
@@ -398,50 +417,64 @@ const TXT={
     extras:"Extras",soundLong:"Sounds for right & wrong",digiLong:"Digital time, 24 hours",
     parts:{night:"at night",morning:"in the morning",forenoon:"in the morning",noon:"at noon",afternoon:"in the afternoon",evening:"in the evening"},
     album:"Your stars",newBadge:n=>`🎉 ${n} stars!`,streak:n=>`🔥 ${n} day${n>1?"s":""} in a row`,
-    nextBadge:n=>`${n} more star${n>1?"s":""} to the next sticker`,allBadges:"All stickers collected!"}
+    nextBadge:n=>`${n} more star${n>1?"s":""} to the next sticker`,allBadges:"All stickers collected!",
+    medals:"Medals per level",newMedal:(e,l)=>`${e} Medal “${l}”!`}
 };
-let lang="ch"; try{ const l=localStorage.getItem("uhr-lang"); if(l==="de"||l==="en") lang=l; }catch(e){}
-const T=()=>TXT[lang];
 const CH=["zwölfi","eis","zwei","drüü","vieri","füfi","sächsi","sibni","achti","nüüni","zäni","elfi","zwölfi"];
 const DE=["zwölf","eins","zwei","drei","vier","fünf","sechs","sieben","acht","neun","zehn","elf","zwölf"];
 const EN=["twelve","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve"];
-
-/* minute words 1–20 */
+/* minute words */
 const CHM=["","eis","zwei","drüü","vier","füüf","sächs","sibe","acht","nüün","zäh","elf","zwölf","drizää","vierzää","füfzää","sächzää","sibezää","achzää","nünzää","zwänzg"];
 const DEM=["","eins","zwei","drei","vier","fünf","sechs","sieben","acht","neun","zehn","elf","zwölf","dreizehn","vierzehn","fünfzehn","sechzehn","siebzehn","achtzehn","neunzehn","zwanzig"];
 const ENM=["","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen","twenty",
   "twenty-one","twenty-two","twenty-three","twenty-four","twenty-five","twenty-six","twenty-seven","twenty-eight","twenty-nine"];
-/* every minute, counted towards the nearest landmark: the full hour, «halbi» or the next hour
-   3:07 sibe ab drüü · 3:23 sibe vor halbi vieri · 3:37 sibe ab halbi vieri · 3:47 drizää vor vieri */
-function phrase(h,m){
-  const H=h%12||12, N=H%12+1;
-  const hc=`<span class="h">${CH[H]}</span>`, nc=`<span class="h">${CH[N]}</span>`;
-  const hd=`<span class="h">${H===1&&m===0?"ein":DE[H]}</span>`, nd=`<span class="h">${DE[N]}</span>`;
-  const M=t=>`<span class="m">${t}</span>`;
-  let ch, de;
-  if(m===0){ ch=`Es isch ${hc}`; de=`Es ist ${hd} Uhr`; }
-  else if(m===15){ ch=`${M("Viertel ab")} ${hc}`; de=`${M("Viertel nach")} ${hd}`; }
-  else if(m===30){ ch=`${M("halbi")} ${nc}`; de=`${M("halb")} ${nd}`; }
-  else if(m===45){ ch=`${M("Viertel vor")} ${nc}`; de=`${M("Viertel vor")} ${nd}`; }
-  else if(m<=20){ ch=`${M(CHM[m]+" ab")} ${hc}`; de=`${M(DEM[m]+" nach")} ${hd}`; }
-  else if(m<30){ ch=`${M(CHM[30-m]+" vor halbi")} ${nc}`; de=`${M(DEM[30-m]+" vor halb")} ${nd}`; }
-  else if(m<40){ ch=`${M(CHM[m-30]+" ab halbi")} ${nc}`; de=`${M(DEM[m-30]+" nach halb")} ${nd}`; }
-  else { ch=`${M(CHM[60-m]+" vor")} ${nc}`; de=`${M(DEM[60-m]+" vor")} ${nd}`; }
-  // English counts past the hour up to half past, then to the next hour: five past three, half past three, twenty to four
-  const he=`<span class="h">${EN[H]}</span>`, ne=`<span class="h">${EN[N]}</span>`;
-  const mins=k=>k===1?"one minute":ENM[k]; // spoken style: «seven past three», «twenty-nine to four»
-  let en;
-  if(m===0) en=`It's ${he} o'clock`;
-  else if(m===15) en=`${M("quarter past")} ${he}`;
-  else if(m===30) en=`${M("half past")} ${he}`;
-  else if(m===45) en=`${M("quarter to")} ${ne}`;
-  else if(m<30) en=`${M(mins(m)+" past")} ${he}`;
-  else en=`${M(mins(60-m)+" to")} ${ne}`;
-  const txt=x=>x.replace(/<[^>]+>/g,"");
-  return {ch, de, en, chText:txt(ch), deText:txt(de), enText:txt(en)};
-}
-// from which minute the phrase names the coming hour: «nüün vor halbi vieri» from :21, «twenty-nine minutes to four» from :31
-const nextAt=()=>lang==="en"?31:21;
+const M=t=>`<span class="m">${t}</span>`, HR=t=>`<span class="h">${t}</span>`;
+
+/* ---------- languages ----------
+   Each language is one block: how it says a time (say), its hour names (for the help texts), from which minute the
+   phrase names the coming hour (next), the voice for reading aloud (read = whose phrase is spoken), and which language
+   is shown as the second line. Adding a language = one block here plus its texts in TXT. */
+const LANGS={
+  ch:{name:"Schwiizer&shy;dütsch", html:"de-CH", tts:"de-CH", voice:/de[-_]CH/i, voiceAny:/^de/i, read:"de", second:"de", next:21, hours:CH, clock:" Uhr",
+    // counted towards the nearest landmark: sibe ab drüü · sibe vor halbi vieri · sibe ab halbi vieri · drizää vor vieri
+    say(h,m){ const H=h%12||12, N=H%12+1, hc=HR(CH[H]), nc=HR(CH[N]);
+      if(m===0) return `Es isch ${hc}`;
+      if(m===15) return `${M("Viertel ab")} ${hc}`;
+      if(m===30) return `${M("halbi")} ${nc}`;
+      if(m===45) return `${M("Viertel vor")} ${nc}`;
+      if(m<=20) return `${M(CHM[m]+" ab")} ${hc}`;
+      if(m<30) return `${M(CHM[30-m]+" vor halbi")} ${nc}`;
+      if(m<40) return `${M(CHM[m-30]+" ab halbi")} ${nc}`;
+      return `${M(CHM[60-m]+" vor")} ${nc}`; }},
+  de:{name:"Hoch&shy;deutsch", html:"de", tts:"de-DE", voice:/de[-_]DE/i, voiceAny:/^de/i, read:"de", second:null, next:21, hours:DE, clock:" Uhr",
+    say(h,m){ const H=h%12||12, N=H%12+1, hd=HR(H===1&&m===0?"ein":DE[H]), nd=HR(DE[N]);
+      if(m===0) return `Es ist ${hd} Uhr`;
+      if(m===15) return `${M("Viertel nach")} ${hd}`;
+      if(m===30) return `${M("halb")} ${nd}`;
+      if(m===45) return `${M("Viertel vor")} ${nd}`;
+      if(m<=20) return `${M(DEM[m]+" nach")} ${hd}`;
+      if(m<30) return `${M(DEM[30-m]+" vor halb")} ${nd}`;
+      if(m<40) return `${M(DEM[m-30]+" nach halb")} ${nd}`;
+      return `${M(DEM[60-m]+" vor")} ${nd}`; }},
+  en:{name:"English", html:"en", tts:"en-GB", voice:/en[-_]GB/i, voiceAny:/^en/i, read:"en", second:"ch", next:31, hours:EN, clock:"",
+    // past the hour up to half past, then to the next hour: five past three · half past three · twenty to four
+    say(h,m){ const H=h%12||12, N=H%12+1, he=HR(EN[H]), ne=HR(EN[N]), mins=k=>k===1?"one minute":ENM[k];
+      if(m===0) return `It's ${he} o'clock`;
+      if(m===15) return `${M("quarter past")} ${he}`;
+      if(m===30) return `${M("half past")} ${he}`;
+      if(m===45) return `${M("quarter to")} ${ne}`;
+      if(m<30) return `${M(mins(m)+" past")} ${he}`;
+      return `${M(mins(60-m)+" to")} ${ne}`; }}
+};
+let lang="ch"; try{ const l=localStorage.getItem("uhr-lang"); if(Object.prototype.hasOwnProperty.call(LANGS,l)) lang=l; }catch(e){}
+const L=()=>LANGS[lang];
+const T=()=>TXT[lang];
+const strip=x=>x.replace(/<[^>]+>/g,"");
+/* a time in every language: {h, m, html:{ch,de,en,…}, text:{…}} */
+function phrase(h,m){ const html={}, text={}; for(const k in LANGS){ html[k]=LANGS[k].say(h,m); text[k]=strip(html[k]); } return {h,m,html,text}; }
+const nextAt=()=>L().next;
+/* the language buttons in the settings come from the list above */
+for(const k in LANGS){ const b=document.createElement("button"); b.type="button"; b.dataset.lang=k; b.lang=LANGS[k].html; b.innerHTML=LANGS[k].name; $("langs").append(b); }
 /* what the app shows for a phrase in the chosen language */
 function setCh(html){ const el=document.getElementById("ch"); el.innerHTML=html; fitCh(); }
 function fitCh(){ // shrink the phrase until it fits on one line
@@ -449,10 +482,10 @@ function fitCh(){ // shrink the phrase until it fits on one line
   if(el.scrollWidth>el.clientWidth+1) el.style.fontSize=(parseFloat(getComputedStyle(el).fontSize)*el.clientWidth/el.scrollWidth*.97)+"px";
 }
 addEventListener("resize",()=>requestAnimationFrame(fitCh));
-const main=p=>lang==="de"?p.de:lang==="en"?p.en:p.ch;
-const plain=p=>lang==="de"?p.deText:lang==="en"?p.enText:p.chText;
-// the second line: Hochdeutsch under Swiss German, Swiss German under English (prefix comes from CSS)
-const sub=p=>lang==="ch"?p.deText:lang==="en"?p.chText:"";
+const main=p=>p.html[lang];
+const plain=p=>p.text[lang];
+// the second line, e.g. Hochdeutsch under Swiss German, Swiss German under English (its prefix comes from CSS)
+const sub=p=>L().second?p.text[L().second]:"";
 /* text to speech: Hochdeutsch in the German modes, English in English; only from a real tap on the play button */
 let cur=null, lastDragEnd=0;
 try{localStorage.removeItem("uhr-voice")}catch(e){}
@@ -460,17 +493,15 @@ const tts="speechSynthesis" in window;
 const hush=()=>{if(tts)speechSynthesis.cancel()};
 function pickVoice(){
   const vs=tts?speechSynthesis.getVoices():[];
-  if(lang==="en") return vs.find(v=>/en[-_]GB/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang))||null;
-  const pref=lang==="de"?/de[-_]DE/i:/de[-_]CH/i;
-  return vs.find(v=>pref.test(v.lang))||vs.find(v=>/^de/i.test(v.lang))||null;
+  const l=L(); return vs.find(v=>l.voice.test(v.lang))||vs.find(v=>l.voiceAny.test(v.lang))||null;
 }
 function speak(e){
   if(!tts||!cur||!e||!e.isTrusted) return;
   if(Date.now()-lastDragEnd<600) return; // a drag that ends on the button is not a tap
-  const txt=lang==="en"?cur.enText:cur.deText;
+  const txt=cur.text[L().read];
   speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(txt); const v=pickVoice();
-  if(v){u.voice=v;u.lang=v.lang}else u.lang=lang==="en"?"en-GB":lang==="de"?"de-DE":"de-CH";
+  if(v){u.voice=v;u.lang=v.lang}else u.lang=L().tts;
   u.rate=.85; speechSynthesis.speak(u);
 }
 /* feedback sounds, synthesized; they only follow an answer the child just tapped */
@@ -579,7 +610,7 @@ function showTarget(){
     const p=phrase(target.h,target.m);
     $("sayLabel").textContent=T().setTo; $("dig").textContent="";
     if(target.t24!=null){ // digital task: «15:45 · am Namittag»
-      setCh(dig24(target.t24)); $("de").textContent=dayPart(target.t24); cur={deText:dig24(target.t24)+" Uhr",enText:dig24(target.t24)};
+      setCh(dig24(target.t24)); $("de").textContent=dayPart(target.t24); cur={text:Object.fromEntries(Object.keys(LANGS).map(k=>[k,dig24(target.t24)+LANGS[k].clock]))};
     } else { setCh(main(p)); $("de").textContent=""; cur=p; }
     $("speak").hidden=!tts;
   } else if(mode==="luege"){
@@ -636,7 +667,7 @@ function newTask(){
     const box=$("opts"); box.innerHTML="";
     arr.forEach((t,i)=>{
       const b=document.createElement("button"); b.className="btn"; b.id="opt"+i;
-      b.textContent=plain(phrase(t.h,t.m)); b.classList.toggle("long",b.textContent.length>20);
+      b.textContent=plain(phrase(t.h,t.m)).replace(/-/g,"‑"); b.classList.toggle("long",b.textContent.length>16); // keep «twenty‑seven» together
       const ok=t.h===target.h&&t.m===target.m; if(ok) b.dataset.ok="1";
       b.onclick=()=>{
         if(locked) return;
@@ -658,11 +689,17 @@ function win(){
   cur=p; $("speak").hidden=!tts; glowHour(hourRef(target.h,target.m));
   $("showRow").hidden=true; $("check").hidden=true; $("nextRow").hidden=false; syncDock(); starBurst();
   bumpStreak();
-  const b=BADGES.find(x=>x.n===score); if(b) setTimeout(()=>openAlbum(b.n),1300);
+  (medals[lang]||(medals[lang]={}))[lvl]=lvlCount(lang,lvl)+1;
+  try{localStorage.setItem("uhr-medals",JSON.stringify(medals))}catch(e){}
+  const wonLvl=lvl, b=BADGES.find(x=>x.n===score);
+  let md=MEDALS.find(x=>x.n===lvlCount(lang,wonLvl));
+  if(md&&[1,2,3,4].some(k=>k>wonLvl&&lvlCount(lang,k)>=md.n)) md=null; // already shown here through a harder level
+  labelSteps(); // a new medal shows on the settings button
+  if(b||md) setTimeout(()=>openAlbum(b?b.n:0,md?wonLvl:0),1300);
 }
 /* what is off: ["h"|"m"|"hm", message] for a guessed hour and minute */
 function explain(gh,gm){
-  const t=T(), names=lang==="de"?DE:lang==="en"?EN:CH, H=target.h%12||12, N=H%12+1;
+  const t=T(), names=L().hours, H=target.h%12||12, N=H%12+1;
   const hourOk=gh%12===target.h%12, minOk=gm===target.m;
   if(minOk&&!hourOk){
     if(target.m>=nextAt()&&mode==="stell"&&gh%12===N%12) return ["h",t.notYet(names[N])];   // set the hour hand onto the spoken hour
@@ -701,6 +738,13 @@ function reveal(){
 
 /* stickers and day streak */
 const BADGES=[{n:10,e:"🐣"},{n:25,e:"🐢"},{n:50,e:"🦊"},{n:100,e:"🦁"},{n:200,e:"🦄"},{n:500,e:"🚀"}];
+/* medals: per language and level (each its own stars); the stickers follow the overall stars across all languages.
+   A medal earned on a harder level also counts for the easier ones (5-minute times include the half hours). */
+const MEDALS=[{n:10,e:"🥉"},{n:25,e:"🥈"},{n:50,e:"🥇"}];
+let medals={}; try{ medals=JSON.parse(localStorage.getItem("uhr-medals"))||{}; localStorage.removeItem("uhr-lvlstars"); }catch(e){}
+const lvlCount=(lg,l)=>(medals[lg]&&medals[lg][l])||0;
+const hasMedal=(lg,l,x)=>[1,2,3,4].some(k=>k>=l&&lvlCount(lg,k)>=x.n);
+const bestMedal=l=>[...MEDALS].reverse().find(x=>hasMedal(lang,l,x));
 let streak={last:"",n:0}; try{streak=JSON.parse(localStorage.getItem("uhr-streak"))||streak}catch(e){}
 const dayKey=d=>`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
 const yesterday=()=>{const d=new Date(); d.setDate(d.getDate()-1); return dayKey(d);};
@@ -711,10 +755,14 @@ function bumpStreak(){
   try{localStorage.setItem("uhr-streak",JSON.stringify(streak))}catch(e){}
 }
 const liveStreak=()=>streak.last===dayKey(new Date())||streak.last===yesterday()?streak.n:0;
-function openAlbum(fresh){
+function openAlbum(fresh,freshLvl){
   const t=T(), al=$("album");
   if(al.open||$("settings").open) return;
-  $("albTitle").textContent=fresh?t.newBadge(fresh):t.album;
+  const fm=freshLvl&&MEDALS.find(x=>x.n===lvlCount(lang,freshLvl));
+  $("albTitle").textContent=fm?t.newMedal(fm.e,t.lvlShort[freshLvl]):fresh?t.newBadge(fresh):t.album;
+  $("medLabel").textContent=t.medals+" · "+strip(L().name).replace(/­/g,"").replace(/&shy;/g,""); // the medals of the language in use
+  $("medals").innerHTML=[1,2,3,4].map(l=>{ const c=lvlCount(lang,l), got=MEDALS.filter(x=>hasMedal(lang,l,x)).map(x=>x.e).join(" ");
+    return `<div class="lvm${l===lvl?" cur":""}" role="img" aria-label="${t.lvlLong[l]}: ★ ${c}${got?" "+got:""}"><span class="ln" aria-hidden="true">${t.lvlShort[l]}</span><span class="ls" aria-hidden="true">★ ${c}</span><span class="mm" aria-hidden="true">${MEDALS.map(x=>`<i class="${hasMedal(lang,l,x)?"got":""}${fm&&x===fm&&l<=freshLvl&&(l===freshLvl||lvlCount(lang,l)<fm.n)?" fresh":""}">${x.e}</i>`).join("")}</span></div>`; }).join("");
   $("albStars").textContent="★ "+score;
   const sk=liveStreak(); $("albStreak").textContent=sk?t.streak(sk):"";
   $("badges").innerHTML=BADGES.map(b=>`<div class="badge${score>=b.n?" got":""}${b.n===fresh?" fresh":""}" role="img" aria-label="${b.n} ★${score>=b.n?" ✓":""}"><span class="em" aria-hidden="true">${b.e}</span><span class="bn" aria-hidden="true">★ ${b.n}</span></div>`).join("");
@@ -738,12 +786,12 @@ function setMode(md){
 const gran=()=>({1:30,2:15,3:5,4:1})[lvl];
 function snapM(){ const g=gran(); if(m%g){ setTot(Math.round(tot()/g)*g); draw(); } }
 function labelSteps(){ const g=gran(), t=T(); $("mp").textContent="+ "+g; $("mm").textContent="− "+g;
-  $("lvlChip").textContent=t.lvlShort[lvl]; $("gear").setAttribute("aria-label",t.settings+" – "+t.level+": "+t.lvlLong[lvl]);
+  const md=bestMedal(lvl); $("lvlChip").textContent=t.lvlShort[lvl]+(md?" "+md.e:""); $("gear").setAttribute("aria-label",t.settings+" – "+t.level+": "+t.lvlLong[lvl]);
   $("mp").setAttribute("aria-label",t.minFwd(g)); $("mm").setAttribute("aria-label",t.minBack(g)); }
 /* put every fixed text into the chosen language */
 function applyLang(){
   const t=T();
-  document.documentElement.lang={ch:"de-CH",de:"de",en:"en"}[lang]; document.title=t.doc;
+  document.documentElement.lang=L().html; document.title=t.doc;
   document.querySelector("h1").innerHTML=t.title;
   $("t-lern").textContent=t.lern; $("t-stell").textContent=t.stell; $("t-luege").textContent=t.luege;
   document.querySelector(".tabs").setAttribute("aria-label",t.mode);
@@ -775,7 +823,7 @@ $("hp").onclick=()=>step(60); $("hm").onclick=()=>step(-60);
 $("go").onclick=()=>{ if(locked) return; if(h%12===target.h%12&&m===target.m){locked=true;win();} else lose(...explain(h,m)); };
 $("show").onclick=reveal;
 $("now").onclick=()=>{ const d=new Date(), g=gran(); setTot(Math.round((d.getHours()*60+d.getMinutes())/g)*g); draw(); };
-$("score").onclick=()=>openAlbum(0);
+$("score").onclick=()=>openAlbum(0,0);
 function setDigi(){ $("digi").setAttribute("aria-pressed",digital); $("digiText").textContent=digital?T().on:T().off; }
 $("digi").onclick=()=>{ digital=!digital; try{localStorage.setItem("uhr-digi",digital?"on":"off")}catch(e){} setDigi(); setMode(mode); };
 $("next").onclick=newTask;
