@@ -62,8 +62,8 @@ button:focus-visible{outline:3px solid var(--hour);outline-offset:2px}
 
 /* wide screens: clock on the left, as tall as the screen allows; everything else on the right */
 @media (min-aspect-ratio:6/5){
-  /* clock as tall as the screen allows, but the right column always keeps at least 300px */
-  .wrap{--clock:min(calc(var(--vh) - 2*var(--pad)),52vw,calc(100vw - 2*var(--pad) - 3vw - 300px),720px);max-width:1320px;
+  /* clock as tall as the screen allows, but the right column always keeps at least 320px */
+  .wrap{--clock:min(calc(var(--vh) - 2*var(--pad)),52vw,calc(100vw - 2*var(--pad) - 3vw - 320px),720px);max-width:1320px;
     grid-template-columns:var(--clock) minmax(0,1fr);grid-template-rows:auto auto;
     grid-template-areas:"clock top" "clock panel";column-gap:clamp(12px,3vw,48px);align-content:center}
   .clockbox{align-self:center;width:var(--clock);height:var(--clock)}
@@ -72,10 +72,10 @@ button:focus-visible{outline:3px solid var(--hour);outline-offset:2px}
 
 /* ---------- header and mode tabs ---------- */
 header{position:relative;display:flex;align-items:center;justify-content:space-between;gap:var(--gap)}
-h1{font-family:var(--display);font-weight:800;font-size:clamp(1.4rem,7cqi,2.4rem);margin:0;line-height:1;white-space:nowrap}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.3rem,7cqi,2.4rem);margin:0;line-height:1;flex:0 1 auto;min-width:0;text-wrap:balance} /* wraps to two lines when the header is tight */
 h1 span{color:var(--minute)}
 .hd{display:flex;align-items:center;gap:var(--gap)}
-.score{display:inline-block;font-family:var(--display);font-weight:800;font-size:clamp(1rem,4.5cqi,1.35rem);color:var(--minute);font-variant-numeric:tabular-nums;background:var(--paper);border:2px solid var(--line);border-radius:999px;padding:2px 14px;line-height:1.6}
+.score{display:inline-block;font-family:var(--display);font-weight:800;font-size:clamp(1rem,4.5cqi,1.35rem);color:var(--minute);font-variant-numeric:tabular-nums;background:var(--paper);border:2px solid var(--line);border-radius:999px;padding:2px 14px;line-height:1.6;white-space:nowrap}
 /* settings button shows the current level, so people see there is something to change */
 .gear{border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;min-width:var(--tab);height:var(--tab);
   display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;padding:0 12px 0 10px;
@@ -110,7 +110,7 @@ svg{width:100%;height:100%;display:block;touch-action:none;user-select:none}
 
 /* ---------- phrase box: same design everywhere; round read-aloud button on the right ---------- */
 .say{position:relative;background:var(--paper);border:2px solid var(--line);border-radius:calc(var(--radius) + 4px);
-  padding:var(--gap) calc(var(--tab) + 2*var(--gap)) var(--gap) var(--gap);min-height:calc(var(--tab) + 2*var(--gap));box-sizing:border-box;
+  padding:var(--gap) calc(var(--tap) + 2*var(--gap)) var(--gap) var(--gap);min-height:calc(var(--tap) + 2*var(--gap));box-sizing:border-box;
   text-align:center;display:flex;flex-direction:column;justify-content:center;gap:2px}
 .say .label{font-size:clamp(.7rem,2.6cqi,.85rem);font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .say.ask .label{font-family:var(--display);font-size:clamp(1.2rem,6cqi,2rem);letter-spacing:0;text-transform:none;color:var(--ink)}
@@ -122,8 +122,8 @@ svg{width:100%;height:100%;display:block;touch-action:none;user-select:none}
 .say .dig{font-family:var(--display);font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
 .say .dig:not(:empty)::before{content:" · "}
 .speak{position:absolute;right:var(--gap);top:50%;transform:translateY(-50%)}
-.speak .play{border:0;border-radius:999px;width:var(--tab);height:var(--tab);padding:0;background:var(--hour);color:#fff;cursor:pointer;display:grid;place-items:center;font-size:0}
-.speak .play svg{width:45%;height:45%;fill:currentColor}
+.speak .play{border:0;border-radius:999px;width:var(--tap);height:var(--tap);padding:0;background:var(--hour);color:#fff;cursor:pointer;display:grid;place-items:center;font-size:0}
+.speak .play svg{width:60%;height:60%;fill:currentColor}
 
 /* ---------- buttons, answers, answer row ---------- */
 .btn{font-weight:800;font-size:clamp(1rem,4.2cqi,1.3rem);line-height:1.15;border:2px solid var(--line);border-radius:var(--radius);padding:4px 8px;min-height:var(--tap);min-width:0;cursor:pointer;background:var(--paper);color:var(--ink)}
@@ -134,6 +134,7 @@ svg{width:100%;height:100%;display:block;touch-action:none;user-select:none}
 #controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
 .opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gap)}
 .opts .btn{font-family:var(--display);font-size:clamp(.95rem,4cqi,1.3rem);padding:4px 6px;text-wrap:balance;min-height:max(var(--tap),calc(2.3em + 12px))} /* room for two lines, so the row never jumps */
+@container (max-width:360px){.opts .btn{font-size:.88rem;padding:2px 4px}}
 .opts .btn.right{background:var(--good);border-color:var(--good);color:#06210f}
 .opts .btn.wrong{border-color:var(--bad);color:var(--bad)}
 .dock{display:flex;align-items:center;gap:var(--gap)}
@@ -148,7 +149,7 @@ body:not([data-mode="lern"]) .hint{display:none}
 @media (max-height:440px){.hint{display:none}}
 
 /* ---------- settings dialog ---------- */
-dialog#settings{border:0;padding:0;background:transparent;color:var(--ink);width:min(440px,calc(100vw - 32px));max-height:calc(var(--vh) - 24px)}
+dialog#settings{border:0;padding:0;background:transparent;color:var(--ink);width:min(440px,calc(100vw - 32px));max-height:calc(var(--vh) - 24px);overflow:auto}
 dialog#settings::backdrop{background:rgba(10,15,20,.55)}
 .sheet{background:var(--paper);border:2px solid var(--line);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:16px;font-family:var(--body)}
 .sheet h2{font-family:var(--display);font-weight:800;margin:0;font-size:1.6rem;line-height:1}
@@ -156,13 +157,23 @@ dialog#settings::backdrop{background:rgba(10,15,20,.55)}
 .set-inline{flex-direction:row;align-items:center;justify-content:space-between;gap:12px}
 .set-label{font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .levels{display:grid;grid-template-columns:1fr;gap:6px}
-.levels button{font-weight:800;border:2px solid var(--line);border-radius:12px;min-height:50px;font-size:1.05rem;display:flex;justify-content:space-between;align-items:center;padding:8px 14px;text-align:left;background:transparent;color:var(--muted);cursor:pointer}
-.levels button[aria-pressed="true"]{border-color:var(--minute);color:var(--ink)}
+.levels button,.langs button{font-weight:800;border:2px solid var(--line);border-radius:12px;min-height:50px;font-size:1.05rem;display:flex;justify-content:space-between;align-items:center;padding:8px 14px;text-align:left;background:transparent;color:var(--muted);cursor:pointer}
+.levels button[aria-pressed="true"],.langs button[aria-pressed="true"]{border-color:var(--minute);color:var(--ink)}
+.langs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.langs button{justify-content:center;text-align:center;padding:8px}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.sheet-head .btn{flex:none;padding:4px 20px}
 .levels small{font-weight:700;color:var(--muted);font-size:.85rem}
 .toggle{font-weight:800;border:2px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;min-height:44px;padding:6px 16px;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
 .toggle svg{width:22px;height:22px;fill:currentColor}
 .toggle[aria-pressed="true"]{border-color:var(--good);color:var(--good)}
-.sheet .btn{min-height:52px}
+.sheet .btn{min-height:48px}
+/* short screens (phone sideways): levels side by side so the whole sheet fits */
+@media (max-height:500px){
+  .sheet{padding:12px 14px;gap:10px} .sheet h2{font-size:1.3rem}
+  .levels{grid-template-columns:repeat(3,1fr)} .levels small{display:none}
+  .levels button,.langs button{min-height:44px;justify-content:center;text-align:center;padding:4px 6px;font-size:.95rem}
+}
 
 /* ---------- motion ---------- */
 .score.pop{animation:pop .6s cubic-bezier(.3,1.6,.5,1)}
@@ -202,8 +213,8 @@ dialog#settings::backdrop{background:rgba(10,15,20,.55)}
     <svg id="clock" viewBox="-28 -28 356 356" aria-label="Uhr">
       <circle class="face" cx="150" cy="150" r="132"/>
       <path id="wedge" class="wedge" d=""/>
-      <text class="side" x="200" y="214">ab</text>
-      <text class="side" x="100" y="214">vor</text>
+      <text class="side" id="sideA" x="200" y="214">ab</text>
+      <text class="side" id="sideB" x="100" y="214">vor</text>
       <g id="ticks"></g>
       <g id="nums"></g>
       <g class="hands" id="hands">
@@ -220,7 +231,7 @@ dialog#settings::backdrop{background:rgba(10,15,20,.55)}
     <span class="ch" id="ch"></span>
     <span class="sub"><span class="de" id="de"></span><span class="dig" id="dig"></span></span>
     <div class="speak" id="speak">
-      <button class="play" id="play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>Hochdütsch vorläse</button>
+      <button class="play" id="play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg></button>
     </div>
   </section>
 
@@ -246,7 +257,17 @@ dialog#settings::backdrop{background:rgba(10,15,20,.55)}
 
 <dialog id="settings" aria-labelledby="setTitle">
   <form method="dialog" class="sheet">
-    <h2 id="setTitle">Iistellige</h2>
+    <div class="sheet-head">
+      <h2 id="setTitle">Iistellige</h2>
+      <button class="btn primary" value="close" id="done">Fertig</button>
+    </div>
+    <div class="set-row">
+      <span class="set-label" id="langLabel">Sprooch</span>
+      <div class="langs" role="group" aria-labelledby="langLabel">
+        <button type="button" data-lang="ch" aria-pressed="true">Schwiizerdütsch</button>
+        <button type="button" data-lang="de" aria-pressed="false">Hochdeutsch</button>
+      </div>
+    </div>
     <div class="set-row">
       <span class="set-label" id="lvLabel">Stufe</span>
       <div class="levels" role="group" aria-labelledby="lvLabel">
@@ -256,39 +277,67 @@ dialog#settings::backdrop{background:rgba(10,15,20,.55)}
       </div>
     </div>
     <div class="set-row set-inline">
-      <span class="set-label">Tön bi richtig &amp; falsch</span>
+      <span class="set-label" id="soundLabel">Tön bi richtig &amp; falsch</span>
       <button type="button" class="toggle" id="mute" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path id="muteIcon" d=""/></svg><span id="muteText">Ii</span></button>
     </div>
-    <button class="btn primary" value="close">Fertig</button>
   </form>
 </dialog>
 
 <script>
 (()=>{
 const $=id=>document.getElementById(id);
+/* every visible text, in Swiss German and in Standard German */
+const TXT={
+  ch:{doc:"Uhrzyt Lerne",title:"Uhrzyt <span>lerne</span>",mode:"Modus",lern:"Üebe",stell:"Stell d'Uhr",luege:"Wie spoot?",
+    say:"Mer seit",setTo:"Stell d'Uhr uf",ask:"Wie spoot isch es?",right:"Richtig",check:"Prüefe",next:"Nöchschti Uufgab",
+    miss:"Fasch! Probier nomal.",wins:["Super!","Bravo!","Genau so!","Toll gmacht!"],sub:"Hochdütsch: ",
+    hint:'Zieh de <b class="m">langi oranschi Zeiger</b> für d\'Minute und de <b class="h">churzi blaui Zeiger</b> für d\'Stund. Rächts isch «ab», links isch «vor».',
+    after:"ab",before:"vor",clock:"Uhr",play:"Hochdütsch vorläse",hr:"Std",hrBack:"Eis Stund zrugg",hrFwd:"Eis Stund vorwärts",
+    minBack:n=>n+" Minute zrugg",minFwd:n=>n+" Minute vorwärts",
+    settings:"Iistellige",level:"Stufe",lang:"Sprooch",sound:"Tön bi richtig & falsch",on:"Ii",off:"Us",done:"Fertig",
+    lvlLong:{1:"Ganzi & Halbi",2:"+ Viertel",3:"Alli 5 Minute"},lvlShort:{1:"Halbi",2:"Viertel",3:"5 Min"},
+    tipFirst:"Do chasch d'Stufe, d'Sprooch und d'Tön iistelle.",tipHard:"Z'schwär? Do chasch e liechteri Stufe wähle."},
+  de:{doc:"Uhrzeit lernen",title:"Uhrzeit <span>lernen</span>",mode:"Modus",lern:"Üben",stell:"Uhr stellen",luege:"Wie spät?",
+    say:"Man sagt",setTo:"Stell die Uhr auf",ask:"Wie spät ist es?",right:"Richtig",check:"Prüfen",next:"Nächste Aufgabe",
+    miss:"Fast! Versuch es nochmal.",wins:["Super!","Bravo!","Genau so!","Toll gemacht!"],sub:"",
+    hint:'Zieh den <b class="m">langen orangen Zeiger</b> für die Minuten und den <b class="h">kurzen blauen Zeiger</b> für die Stunden. Rechts ist „nach“, links ist „vor“.',
+    after:"nach",before:"vor",clock:"Uhr",play:"Vorlesen",hr:"Std",hrBack:"Eine Stunde zurück",hrFwd:"Eine Stunde vorwärts",
+    minBack:n=>n+" Minuten zurück",minFwd:n=>n+" Minuten vorwärts",
+    settings:"Einstellungen",level:"Stufe",lang:"Sprache",sound:"Töne bei richtig & falsch",on:"An",off:"Aus",done:"Fertig",
+    lvlLong:{1:"Ganze & Halbe",2:"+ Viertel",3:"Alle 5 Minuten"},lvlShort:{1:"Halbe",2:"Viertel",3:"5 Min"},
+    tipFirst:"Hier kannst du Stufe, Sprache und Töne einstellen.",tipHard:"Zu schwer? Hier kannst du eine leichtere Stufe wählen."}
+};
+let lang="ch"; try{ if(localStorage.getItem("uhr-lang")==="de") lang="de"; }catch(e){}
+const T=()=>TXT[lang];
 const CH=["zwölfi","eis","zwei","drüü","vieri","füfi","sächsi","sibni","achti","nüüni","zäni","elfi","zwölfi"];
 const DE=["zwölf","eins","zwei","drei","vier","fünf","sechs","sieben","acht","neun","zehn","elf","zwölf"];
 
 function phrase(h,m){
   const H=h%12||12, N=H%12+1;
   const hc=`<span class="h">${CH[H]}</span>`, nc=`<span class="h">${CH[N]}</span>`;
+  const hd=`<span class="h">${H===1&&m===0?"ein":DE[H]}</span>`, nd=`<span class="h">${DE[N]}</span>`;
   const M=t=>`<span class="m">${t}</span>`;
   const map={
-    0:[`Es isch ${hc}`, H===1?"ein Uhr":`${DE[H]} Uhr`],
-    5:[`${M("füüf ab")} ${hc}`,`fünf nach ${DE[H]}`],
-    10:[`${M("zäh ab")} ${hc}`,`zehn nach ${DE[H]}`],
-    15:[`${M("Viertel ab")} ${hc}`,`Viertel nach ${DE[H]}`],
-    20:[`${M("zwänzg ab")} ${hc}`,`zwanzig nach ${DE[H]}`],
-    25:[`${M("füüf vor halbi")} ${nc}`,`fünf vor halb ${DE[N]}`],
-    30:[`${M("halbi")} ${nc}`,`halb ${DE[N]}`],
-    35:[`${M("füüf ab halbi")} ${nc}`,`fünf nach halb ${DE[N]}`],
-    40:[`${M("zwänzg vor")} ${nc}`,`zwanzig vor ${DE[N]}`],
-    45:[`${M("Viertel vor")} ${nc}`,`Viertel vor ${DE[N]}`],
-    50:[`${M("zäh vor")} ${nc}`,`zehn vor ${DE[N]}`],
-    55:[`${M("füüf vor")} ${nc}`,`fünf vor ${DE[N]}`]
+    0:[`Es isch ${hc}`, `Es ist ${hd} Uhr`],
+    5:[`${M("füüf ab")} ${hc}`, `${M("fünf nach")} ${hd}`],
+    10:[`${M("zäh ab")} ${hc}`, `${M("zehn nach")} ${hd}`],
+    15:[`${M("Viertel ab")} ${hc}`, `${M("Viertel nach")} ${hd}`],
+    20:[`${M("zwänzg ab")} ${hc}`, `${M("zwanzig nach")} ${hd}`],
+    25:[`${M("füüf vor halbi")} ${nc}`, `${M("fünf vor halb")} ${nd}`],
+    30:[`${M("halbi")} ${nc}`, `${M("halb")} ${nd}`],
+    35:[`${M("füüf ab halbi")} ${nc}`, `${M("fünf nach halb")} ${nd}`],
+    40:[`${M("zwänzg vor")} ${nc}`, `${M("zwanzig vor")} ${nd}`],
+    45:[`${M("Viertel vor")} ${nc}`, `${M("Viertel vor")} ${nd}`],
+    50:[`${M("zäh vor")} ${nc}`, `${M("zehn vor")} ${nd}`],
+    55:[`${M("füüf vor")} ${nc}`, `${M("fünf vor")} ${nd}`]
   };
-  return {ch:map[m][0], de:map[m][1], plain:map[m][0].replace(/<[^>]+>/g,"")};
+  const txt=x=>x.replace(/<[^>]+>/g,"");
+  return {ch:map[m][0], de:map[m][1], chText:txt(map[m][0]), deText:txt(map[m][1])};
 }
+/* what the app shows for a phrase in the chosen language */
+const main=p=>lang==="de"?p.de:p.ch;
+const plain=p=>lang==="de"?p.deText:p.chText;
+const sub=p=>lang==="de"?"":T().sub+p.deText;
 /* text to speech: Hochdeutsch only, and only from a real tap on the play button */
 let cur=null, lastDragEnd=0;
 try{localStorage.removeItem("uhr-voice")}catch(e){}
@@ -296,15 +345,16 @@ const tts="speechSynthesis" in window;
 const hush=()=>{if(tts)speechSynthesis.cancel()};
 function pickVoice(){
   const vs=tts?speechSynthesis.getVoices():[];
-  return vs.find(v=>/de[-_]CH/i.test(v.lang))||vs.find(v=>/^de/i.test(v.lang))||null;
+  const pref=lang==="de"?/de[-_]DE/i:/de[-_]CH/i;
+  return vs.find(v=>pref.test(v.lang))||vs.find(v=>/^de/i.test(v.lang))||null;
 }
 function speak(e){
   if(!tts||!cur||!e||!e.isTrusted) return;
   if(Date.now()-lastDragEnd<600) return; // a drag that ends on the button is not a tap
-  const txt=/Uhr$/.test(cur.de)?"Es ist "+cur.de:cur.de;
+  const txt=cur.deText;
   speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(txt); const v=pickVoice();
-  if(v){u.voice=v;u.lang=v.lang}else u.lang="de-CH";
+  if(v){u.voice=v;u.lang=v.lang}else u.lang=lang==="de"?"de-DE":"de-CH";
   u.rate=.85; speechSynthesis.speak(u);
 }
 /* feedback sounds, synthesized; they only follow an answer the child just tapped */
@@ -330,7 +380,7 @@ function sfx(ok){
 }
 function setSound(on){
   soundOn=on; $("muteIcon").setAttribute("d",on?ICON_ON:ICON_OFF);
-  $("mute").setAttribute("aria-pressed",on); $("muteText").textContent=on?"Ii":"Us";
+  $("mute").setAttribute("aria-pressed",on); $("muteText").textContent=on?T().on:T().off;
   try{localStorage.setItem("uhr-sound",on?"on":"off")}catch(e){}
 }
 const dig=(h,m)=>`${h%12||12}:${String(m).padStart(2,"0")}`;
@@ -380,19 +430,19 @@ function draw(){
   if(mode==="lern"){
     if(practice.h!==h||practice.m!==m){practice={h,m};saveState();}
     const p=phrase(h,m);
-    $("ch").innerHTML=p.ch; $("de").textContent="Hochdütsch: "+p.de; $("dig").textContent=dig(h,m);
+    $("ch").innerHTML=main(p); $("de").textContent=sub(p); $("dig").textContent=dig(h,m);
     cur=p; $("speak").hidden=!tts;
   }
 }
 function showTarget(){
   if(mode==="stell"){
     const p=phrase(target.h,target.m);
-    $("sayLabel").textContent="Stell d'Uhr uf";
-    $("ch").innerHTML=p.ch; $("de").textContent=""; $("dig").textContent="";
+    $("sayLabel").textContent=T().setTo;
+    $("ch").innerHTML=main(p); $("de").textContent=""; $("dig").textContent="";
     cur=p; $("speak").hidden=!tts;
   } else if(mode==="luege"){
     cur=null; $("speak").hidden=true;
-    $("sayLabel").textContent="Wie spoot isch es?";
+    $("sayLabel").textContent=T().ask;
     $("ch").innerHTML="?"; $("de").textContent=""; $("dig").textContent=""; $("say").classList.add("ask");
   }
 }
@@ -440,7 +490,7 @@ function newTask(){
     const box=$("opts"); box.innerHTML="";
     arr.forEach((t,i)=>{
       const b=document.createElement("button"); b.className="btn"; b.id="opt"+i;
-      b.textContent=phrase(t.h,t.m).plain;
+      b.textContent=plain(phrase(t.h,t.m));
       b.onclick=()=>{
         if(locked) return;
         const ok=t.h===target.h&&t.m===target.m;
@@ -455,17 +505,17 @@ function newTask(){
 function win(){
   misses=0; $("say").classList.remove("ask");
   const p=phrase(target.h,target.m);
-  $("fb").innerHTML=["Super!","Bravo!","Genau so!","Toll gmacht!"][Math.floor(Math.random()*4)]+' <span class="fb-star">★</span>';
+  $("fb").innerHTML=T().wins[Math.floor(Math.random()*4)]+' <span class="fb-star">★</span>';
   $("fb").className="feedback"; void $("fb").offsetWidth; $("fb").className="feedback ok";
   sfx(true); setScore(1);
-  $("sayLabel").textContent="Richtig"; $("ch").innerHTML=p.ch; $("de").textContent="Hochdütsch: "+p.de; $("dig").textContent=dig(target.h,target.m);
+  $("sayLabel").textContent=T().right; $("ch").innerHTML=main(p); $("de").textContent=sub(p); $("dig").textContent=dig(target.h,target.m);
   cur=p; $("speak").hidden=!tts;
   $("check").hidden=true; $("nextRow").hidden=false; syncDock(); starBurst();
 }
 function lose(){
   // three misses in a row: point at the settings once per level and session, if an easier level exists
-  if(++misses>=3&&lvl>1&&!offered.has(lvl)){ offered.add(lvl); showTip("Z'schwär? Do chasch e liechteri Stufe wähle."); }
-  sfx(false); $("fb").textContent="Fasch! Probier nomal.";
+  if(++misses>=3&&lvl>1&&!offered.has(lvl)){ offered.add(lvl); showTip("tipHard"); }
+  sfx(false); $("fb").textContent=T().miss;
   $("fb").className="feedback"; void $("fb").offsetWidth; $("fb").className="feedback no"; syncDock();
 }
 
@@ -476,16 +526,34 @@ function setMode(md){
   $("controls").hidden=md==="luege"; $("check").hidden=md!=="stell"; $("opts").hidden=md!=="luege";
   $("hint").hidden=md==="luege";
   $("fb").textContent=""; $("nextRow").hidden=true;
-  if(md==="lern"){ $("sayLabel").textContent="Mer seit"; draw(); snapM(); syncDock(); } else newTask();
+  if(md==="lern"){ $("sayLabel").textContent=T().say; draw(); snapM(); syncDock(); } else newTask();
 }
 
 /* controls */
 const gran=()=>({1:30,2:15,3:5})[lvl];
 function snapM(){ const g=gran(); if(m%g){ m=Math.round(m/g)*g; if(m===60){m=0;h=h%12+1} draw(); } }
-const LVL_SHORT={1:"Halbi",2:"Viertel",3:"5 Min"}, LVL_LONG={1:"Ganzi & Halbi",2:"+ Viertel",3:"Alli 5 Minute"};
-function labelSteps(){ const g=gran(); $("mp").textContent="+ "+g; $("mm").textContent="− "+g;
-  $("lvlChip").textContent=LVL_SHORT[lvl]; $("gear").setAttribute("aria-label","Iistellige – Stufe: "+LVL_LONG[lvl]);
-  $("mp").setAttribute("aria-label",g+" Minute vorwärts"); $("mm").setAttribute("aria-label",g+" Minute zrugg"); }
+function labelSteps(){ const g=gran(), t=T(); $("mp").textContent="+ "+g; $("mm").textContent="− "+g;
+  $("lvlChip").textContent=t.lvlShort[lvl]; $("gear").setAttribute("aria-label",t.settings+" – "+t.level+": "+t.lvlLong[lvl]);
+  $("mp").setAttribute("aria-label",t.minFwd(g)); $("mm").setAttribute("aria-label",t.minBack(g)); }
+/* put every fixed text into the chosen language */
+function applyLang(){
+  const t=T();
+  document.documentElement.lang=lang==="de"?"de":"de-CH"; document.title=t.doc;
+  document.querySelector("h1").innerHTML=t.title;
+  $("t-lern").textContent=t.lern; $("t-stell").textContent=t.stell; $("t-luege").textContent=t.luege;
+  document.querySelector(".tabs").setAttribute("aria-label",t.mode);
+  $("clock").setAttribute("aria-label",t.clock); $("sideA").textContent=t.after; $("sideB").textContent=t.before;
+  $("play").setAttribute("aria-label",t.play);
+  $("hm").textContent="− "+t.hr; $("hp").textContent="+ "+t.hr;
+  $("hm").setAttribute("aria-label",t.hrBack); $("hp").setAttribute("aria-label",t.hrFwd);
+  $("go").textContent=t.check; $("next").textContent=t.next; $("hint").innerHTML=t.hint;
+  $("setTitle").textContent=t.settings; $("langLabel").textContent=t.lang; $("lvLabel").textContent=t.level;
+  $("soundLabel").textContent=t.sound; $("done").textContent=t.done;
+  document.querySelectorAll(".levels button").forEach(b=>b.firstChild.textContent=t.lvlLong[b.dataset.lvl]+" ");
+  document.querySelectorAll(".langs button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.lang===lang));
+  if(!$("tip").hidden&&tipKind) $("tip").textContent=t[tipKind];
+  labelSteps(); setSound(soundOn);
+}
 function step(dm){ let t=h*60+m+dm; t=((t%720)+720)%720; h=Math.floor(t/60)||12; m=t%60; draw(); }
 $("mp").onclick=()=>step(gran()); $("mm").onclick=()=>step(-gran());
 $("hp").onclick=()=>step(60); $("hm").onclick=()=>step(-60);
@@ -496,10 +564,10 @@ $("mute").onclick=()=>setSound(!soundOn);
 const dlg=$("settings");
 /* first launch: point at the settings once; gone for good after the tip or the settings are opened */
 let tipSeen=true; try{tipSeen=!!localStorage.getItem("uhr-tip")}catch(e){}
-let misses=0; const offered=new Set();
-function showTip(text){ if(text) $("tip").textContent=text; $("tip").hidden=false; $("gear").classList.add("new"); }
+let misses=0, tipKind=null; const offered=new Set();
+function showTip(kind){ tipKind=kind; $("tip").textContent=T()[kind]; $("tip").hidden=false; $("gear").classList.add("new"); }
 function hideTip(){ $("tip").hidden=true; $("gear").classList.remove("new"); try{localStorage.setItem("uhr-tip","1")}catch(e){} }
-if(!tipSeen) showTip();
+if(!tipSeen) showTip("tipFirst");
 $("tip").onclick=hideTip;
 $("gear").onclick=()=>{ hush(); hideTip(); if(dlg.showModal) dlg.showModal(); else dlg.setAttribute("open",""); };
 dlg.addEventListener("click",e=>{ if(e.target===dlg) dlg.close(); }); // tap outside closes
@@ -507,6 +575,10 @@ if(tts) speechSynthesis.onvoiceschanged=()=>{};
 document.addEventListener("visibilitychange",()=>{if(document.hidden)hush()});
 window.addEventListener("pagehide",hush);
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+document.querySelectorAll(".langs button").forEach(b=>b.onclick=()=>{
+  lang=b.dataset.lang; try{localStorage.setItem("uhr-lang",lang)}catch(e){}
+  hush(); applyLang(); setMode(mode);
+});
 document.querySelectorAll(".levels button").forEach(b=>b.onclick=()=>{
   lvl=+b.dataset.lvl; document.querySelectorAll(".levels button").forEach(x=>x.setAttribute("aria-pressed",x===b));
   misses=0; saveState(); labelSteps(); if(mode!=="lern") newTask(); else snapM();
@@ -548,7 +620,7 @@ const end=()=>{if(drag)lastDragEnd=Date.now();drag=null;$("hands").classList.rem
 svg.addEventListener("pointerup",end); svg.addEventListener("pointercancel",end);
 
 document.querySelectorAll(".levels button").forEach(x=>x.setAttribute("aria-pressed",+x.dataset.lvl===lvl));
-setScore(0); setSound(soundOn); labelSteps(); setMode(mode);
+setScore(0); applyLang(); setMode(mode);
 // no offline cache when testing locally, so edits show on a plain reload
 const local=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
 if(local&&"serviceWorker" in navigator) navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});
