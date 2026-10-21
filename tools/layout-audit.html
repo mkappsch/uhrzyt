@@ -44,8 +44,9 @@ td ul{margin:0;padding-left:18px}
 <script>
 const SIZES=[[320,640],[360,640],[360,740],[390,844],[412,915],[568,320],[640,360],[740,360],[780,330],[915,412],
   [768,1024],[820,1180],[1024,768],[1180,820],[1280,720],[1440,900],[1920,1080],[900,1000],[700,560]];
-// both languages, both task kinds (spoken / 24 h) and the shortest and longest phrases (levels 1 and 4)
-const RUNS=[{lang:"ch",digi:"off",lvl:4},{lang:"de",digi:"on",lvl:4},{lang:"ch",digi:"on",lvl:1}];
+// all languages, both task kinds (spoken / 24 h) and the shortest and longest phrases (levels 1 and 4)
+const RUNS=[{lang:"ch",digi:"off",lvl:4},{lang:"de",digi:"on",lvl:4},{lang:"en",digi:"off",lvl:4},{lang:"ch",digi:"on",lvl:1}];
+const LANGS={ch:"Schwiizerdütsch",de:"Hochdeutsch",en:"English"};
 const LVL={1:"Halbi",2:"Viertel",3:"5 Min",4:"1 Min"};
 
 /* runs inside the app frame */
@@ -106,9 +107,19 @@ function load(w,h){
     stage.append(f);
   });
 }
+/* the audit changes saved settings while it runs; keep the originals so an interrupted run (reload, closed tab) is undone next time */
+function restore(saved){
+  for(const k of Object.keys(localStorage)) if(k.startsWith("uhr-")&&!(k in saved)) localStorage.removeItem(k);
+  for(const [k,v] of Object.entries(saved)) localStorage.setItem(k,v);
+  localStorage.removeItem("audit-saved");
+}
+const pending=localStorage.getItem("audit-saved");
+if(pending) try{ restore(JSON.parse(pending)); }catch(e){}
 async function runAll(){
   runBtn.disabled=true; rows.innerHTML=""; status.className=""; status.textContent="Running…";
   const saved=Object.fromEntries(Object.keys(localStorage).filter(k=>k.startsWith("uhr-")).map(k=>[k,localStorage.getItem(k)]));
+  localStorage.setItem("audit-saved",JSON.stringify(saved));
+  const onLeave=()=>restore(saved); addEventListener("pagehide",onLeave); // reload or closed tab mid-run
   const results=[];
   try{
     await document.fonts.ready;
@@ -123,13 +134,13 @@ async function runAll(){
       f.remove();
       results.push({size:`${w}×${h}`,lang:run.lang,lvl:run.lvl,...r});
       const tr=document.createElement("tr"), ok=!r.issues.length;
-      tr.innerHTML=`<td>${w}×${h}</td><td>${run.lang==="ch"?"Schwiizerdütsch":"Hochdeutsch"}${run.digi==="on"?" · 24 h":""} · ${LVL[run.lvl]}</td><td>${r.clock}px</td><td class="res ${ok?"ok":"bad"}">${ok?"OK":"<ul>"+r.issues.map(i=>`<li>${i}</li>`).join("")+"</ul>"}</td>`;
+      tr.innerHTML=`<td>${w}×${h}</td><td>${LANGS[run.lang]}${run.digi==="on"?" · 24 h":""} · ${LVL[run.lvl]}</td><td>${r.clock}px</td><td class="res ${ok?"ok":"bad"}">${ok?"OK":"<ul>"+r.issues.map(i=>`<li>${i}</li>`).join("")+"</ul>"}</td>`;
       rows.append(tr);
       status.textContent=`Running… ${results.length} of ${SIZES.length*RUNS.length}`;
     }
   } finally {
-    for(const k of Object.keys(localStorage)) if(k.startsWith("uhr-")&&!(k in saved)) localStorage.removeItem(k);
-    for(const [k,v] of Object.entries(saved)) localStorage.setItem(k,v);
+    removeEventListener("pagehide",onLeave);
+    restore(saved);
     runBtn.disabled=false;
   }
   const bad=results.filter(r=>r.issues.length).length;
