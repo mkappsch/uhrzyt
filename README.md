@@ -1,6 +1,6 @@
 # Uhrzyt lerne
 
-A small app that teaches children to read the clock — in Züritüütsch, Hochdeutsch, English and French.
+A small app that teaches children to read the clock — in Züritüütsch, Aargauer Dütsch, Hochdeutsch, English, Français, Italiano and ภาษาไทย.
 
 **Open it:** https://mkappsch.github.io/uhrzyt/ — on a phone, add it to the home screen; it then works offline.
 

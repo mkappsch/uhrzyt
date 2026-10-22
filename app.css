@@ -22,6 +22,7 @@ html,body{overscroll-behavior:none}
   --vh:100vh;
 }
 @supports (height:100dvh){:root{--vh:100dvh}}
+@media (max-height:500px){:root{--pad:6px}} /* phones sideways: a little more room for the clock and panel */
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#141b20; --paper:#1d262d; --ink:#eef2f4; --muted:#9fb0b9;
   --hour:#6aa2ff; --minute:#ff9a5c; --good:#4cc47e; --bad:#ff7070;
@@ -115,7 +116,7 @@ svg{width:100%;height:100%;display:block;touch-action:none;user-select:none}
 .say.ask .ch{display:none}
 /* a miss: the label above the phrase says what is off */
 .say.warn .label{font-family:var(--display);font-size:clamp(.95rem,4cqi,1.3rem);letter-spacing:0;text-transform:none;color:var(--bad);line-height:1.1}
-@media (max-height:500px){.say.warn .label{font-size:.95rem}}
+@media (max-height:500px){.say.warn .label{font-size:.95rem;white-space:nowrap}} /* short screens: the miss message stays one line (shrunk to fit) */
 .say.warn.shake .label{animation:shake .4s}
 /* the phrase box keeps one height while the time changes, so the clock never resizes under a finger:
    the phrase stays on one line (shrunk to fit) and the lines underneath are fixed */

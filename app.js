@@ -28,10 +28,11 @@ for(const k in LANGS){
 }
 /* what the app shows for a phrase in the chosen language */
 function setCh(html){ const el=document.getElementById("ch"); el.innerHTML=html; fitCh(); }
-function fitCh(){ // shrink the phrase until it fits on one line
-  const el=document.getElementById("ch"); el.style.fontSize="";
+function fitOne(el){ // shrink a one-line text until it fits
+  el.style.fontSize="";
   if(el.scrollWidth>el.clientWidth+1) el.style.fontSize=(parseFloat(getComputedStyle(el).fontSize)*el.clientWidth/el.scrollWidth*.97)+"px";
 }
+const fitCh=()=>{ fitOne(document.getElementById("ch")); const lb=document.getElementById("sayLabel"); if(lb.style.fontSize||document.getElementById("say").classList.contains("warn")) fitOne(lb); };
 addEventListener("resize",()=>requestAnimationFrame(fitCh));
 const main=p=>p.html[lang];
 const plain=p=>p.text[lang];
@@ -266,7 +267,7 @@ function lose(which,msg){
   if(++misses>=3&&lvl>1&&!offered.has(lvl)){ offered.add(lvl); showTip("tipHard"); }
   sfx(false);
   const s=$("say"); s.classList.add("warn"); s.classList.remove("shake"); void s.offsetWidth; s.classList.add("shake");
-  $("sayLabel").textContent=msg;
+  $("sayLabel").textContent=msg; fitOne($("sayLabel"));
   clearTimeout(nudgeT); $("gh").classList.remove("nudge"); $("gm").classList.remove("nudge"); void $("clock").getBoundingClientRect();
   if(which.includes("h")) $("gh").classList.add("nudge");
   if(which.includes("m")) $("gm").classList.add("nudge");

@@ -24,7 +24,8 @@ Uhrzyt.addLanguage("xx",{                 // a short code, e.g. "it", "es", "ch-
   read:"xx",                               // whose phrase is read aloud (usually this code; Swiss German reads "de")
   second:"ch",                             // code of a language shown as second line under each phrase, or null
   next:31,                                 // from which minute the phrase names the NEXT hour (English: 31 «twenty-nine to four»,
-                                           //  German: 21 «neun vor halb vier», French: 35 «quatre heures moins vingt-cinq»)
+                                           //  German: 21 «neun vor halb vier», French: 35 «quatre heures moins vingt-cinq»;
+                                           //  60 if it never names the next hour, like Thai)
   hours:HOURS,
   clock:"",                                // added after a digital time for reading aloud (German: " Uhr")
 

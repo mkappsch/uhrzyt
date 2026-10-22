@@ -1,5 +1,5 @@
-const CACHE="uhrzyt-v15";
-const CORE=["./","index.html","app.css","app.js","lang/ch-zh.js","lang/de.js","lang/en.js","lang/fr.js",
+const CACHE="uhrzyt-v16";
+const CORE=["./","index.html","app.css","app.js","lang/ch-zh.js","lang/ch-ag.js","lang/de.js","lang/en.js","lang/fr.js","lang/it.js","lang/th.js",
   "manifest.webmanifest","icon-192.png","icon-512.png","apple-touch-icon.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)));self.skipWaiting()});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});

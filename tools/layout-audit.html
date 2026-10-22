@@ -88,6 +88,16 @@ function audit(){
       if(g==="answers"&&lines(b)>(b.classList.contains("xlong")?3:2)) issues.add(`answer "${t}" needs ${lines(b)} lines`); // compact long answers may use 3
     }
   }
+  // «set clock» once more with the other 24 h setting, so every language is checked with spoken and digital tasks
+  $("digi").click();
+  for(let rep=0;rep<3;rep++) for(const name of ["set clock, 1 miss","set clock, 2 misses","set clock, shown"]){
+    states[name](); scrollTo(0,0); const doc=document.documentElement;
+    if(doc.scrollHeight>vh+1) issues.add(`${name} (24 h switched): page ${doc.scrollHeight}px tall on a ${vh}px screen`);
+    for(const b of document.querySelectorAll("#controls .btn, #check .btn, #nextRow .btn, #showRow .btn")){
+      if(vis(b)&&b.getBoundingClientRect().bottom>vh+1) issues.add(`${name} (24 h switched): "${b.textContent.trim()}" off screen`);
+    }
+  }
+  $("digi").click();
   for(const id of ["settings","langDlg","album"]){
     if(id==="album") $("score").click();
     else if(id==="langDlg"){ $("settings").showModal(); $("langPick").click(); }

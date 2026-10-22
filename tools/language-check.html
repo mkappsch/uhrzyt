@@ -80,7 +80,7 @@ function check(code, L, ref){
   if(typeof L.flag==="string"&&!/<svg[\s>]/.test(L.flag)) err.push("<b>flag</b> must be an &lt;svg&gt;");
   if(!(L.read in LANGS)) err.push(`<b>read</b> "${esc(L.read)}" is not a language code`);
   if(L.second!==null&&L.second!==undefined&&!(L.second in LANGS)) err.push(`<b>second</b> "${esc(L.second)}" is not a language code (or null)`);
-  if(!Number.isInteger(L.next)||L.next<1||L.next>59) err.push("<b>next</b> must be a minute from 1 to 59");
+  if(!Number.isInteger(L.next)||L.next<1||L.next>60) err.push("<b>next</b> must be a minute from 1 to 59, or 60 if the next hour is never named");
   if(has("hours","array")&&(L.hours.length!==13||L.hours.some(x=>typeof x!=="string"||!x))) err.push("<b>hours</b> needs 13 names (index 0–12)");
   if(L.group&&(!L.groupFlag||!L.dialect)) err.push("a <b>group</b> also needs groupFlag and dialect");
   // the time rules
@@ -112,7 +112,7 @@ function check(code, L, ref){
     for(const k of Object.keys(ref)) if(k in T){
       const a=typeof ref[k], b=typeof T[k];
       if(a!==b||Array.isArray(ref[k])!==Array.isArray(T[k])){ err.push(`text <b>${k}</b> should be a ${Array.isArray(ref[k])?"list":a==="function"?"function, e.g. n=>`…${n}…`":a}`); continue; }
-      if(a==="function"){ try{ const r=k==="newMedal"?T[k]("🥉","5 min"):T[k](3); if(typeof r!=="string"||/undefined/.test(r)) err.push(`text <b>${k}</b>(…) gives "${esc(r)}"`);}catch(e){ err.push(`text <b>${k}</b> fails: ${esc(e.message)}`);} }
+      if(a==="function"){ try{ const r=k==="newMedal"?T[k]("🥉","5 min"):["notYet","almost"].includes(k)?T[k]((L.hours||[])[4]||"four"):T[k](3); if(typeof r!=="string"||/undefined/.test(r)) err.push(`text <b>${k}</b>(…) gives "${esc(r)}"`);}catch(e){ err.push(`text <b>${k}</b> fails: ${esc(e.message)}`);} }
       else if(Array.isArray(ref[k])&&T[k].length!==ref[k].length) err.push(`text <b>${k}</b> needs ${ref[k].length} entries`);
       else if(a==="object"){ const miss=Object.keys(ref[k]).filter(x=>!(x in T[k])); if(miss.length) err.push(`text <b>${k}</b> is missing ${miss.join(", ")}`); }
     }

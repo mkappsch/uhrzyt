@@ -22,6 +22,7 @@ or `lang/ch-be.js` for Bärndütsch. Pick a short, unique code and put it in `Uh
   | English | twenty-five *to four* | 31 |
   | Deutsch | fünf nach halb *vier* | 21 |
   | Français | *quatre heures* moins vingt-cinq | 35 |
+  | ภาษาไทย | สามนาฬิกาสามสิบห้านาที (always forward) | 60 |
 
 - **`hours`** – the 13 hour names (0 and 12 are both twelve), as they fit into the help texts
   («It's not *four* yet!»).
